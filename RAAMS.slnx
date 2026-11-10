@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="RAAMS.API/RAAMS.API.csproj" />
+  <Project Path="RAAMS.Application/RAAMS.Application.csproj" />
+  <Project Path="RAAMS.Domain/RAAMS.Domain.csproj" />
+  <Project Path="RAAMS.Infrastructure/RAAMS.Infrastructure.csproj" />
+  <Project Path="RAAMS.Shared/RAAMS.Shared.csproj" />
+  <Project Path="RAAMS.Tests/RAAMS.Tests.csproj" />
+</Solution>
