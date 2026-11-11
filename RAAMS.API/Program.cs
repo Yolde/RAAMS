@@ -5,6 +5,7 @@ using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using RAAMS.API.Authorization;
+using RAAMS.API.Filters;
 using RAAMS.API.Services;
 using RAAMS.Application.Authorization;
 using RAAMS.Application.Services;
@@ -87,7 +88,7 @@ builder.Services.AddSingleton<IAuthorizationHandler, RequireModuleHandler>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, ModulePolicyProvider>();
 
 // ── Controllers ──
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => options.Filters.Add<FieldMaskingFilter>());
 
 // ── Swagger ──
 builder.Services.AddEndpointsApiExplorer();
