@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using RAAMS.API.Authorization;
 using RAAMS.API.Services;
 using RAAMS.Application.Authorization;
 using RAAMS.Application.Services;
@@ -21,6 +23,7 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IUserProvisioningService, UserProvisioningService>();
 builder.Services.AddScoped<IFieldPermissionService, FieldPermissionService>();
 builder.Services.AddScoped<IRecordSecurityService, RecordSecurityService>();
+builder.Services.AddScoped<IWorkflowAuthorizationService, WorkflowAuthorizationService>();
 
 // ── Authentication ──
 // ── Authentication ──
@@ -80,6 +83,8 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("RequireReviewer", p => p.RequireRole("Reviewer", "GRA", "SuperAdmin"));
     options.AddPolicy("RequireSponsor", p => p.RequireRole("Sponsor", "GRA", "SuperAdmin"));
 });
+builder.Services.AddSingleton<IAuthorizationHandler, RequireModuleHandler>();
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, ModulePolicyProvider>();
 
 // ── Controllers ──
 builder.Services.AddControllers();
