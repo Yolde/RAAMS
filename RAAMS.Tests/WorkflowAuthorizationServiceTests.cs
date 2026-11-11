@@ -3,9 +3,11 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using RAAMS.API.Services;
 using RAAMS.Application.Authorization;
+using RAAMS.Application.Auditing;
 using RAAMS.Application.Services;
 using RAAMS.Domain.Entities.Roles;
 using RAAMS.Infrastructure.Data;
+using RAAMS.Infrastructure.Auditing;
 
 namespace RAAMS.Tests;
 
@@ -17,7 +19,7 @@ public class WorkflowAuthorizationServiceTests
         var options = new DbContextOptionsBuilder<RaamsDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        await using var db = new RaamsDbContext(options, Mock.Of<ICurrentUserService>());
+        await using var db = new RaamsDbContext(options, Mock.Of<ICurrentUserService>(), Mock.Of<IAuditContext>(), NullLogger<AuditSaveChangesInterceptor>.Instance);
         var viewer = new Role { Id = Guid.NewGuid(), Name = "Viewer" };
         var editor = new Role { Id = Guid.NewGuid(), Name = "Editor" };
         var approver = new Role { Id = Guid.NewGuid(), Name = "Approver" };
@@ -51,7 +53,7 @@ public class WorkflowAuthorizationServiceTests
         var options = new DbContextOptionsBuilder<RaamsDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        await using var db = new RaamsDbContext(options, Mock.Of<ICurrentUserService>());
+        await using var db = new RaamsDbContext(options, Mock.Of<ICurrentUserService>(), Mock.Of<IAuditContext>(), NullLogger<AuditSaveChangesInterceptor>.Instance);
         var service = new WorkflowAuthorizationService(db, NullLogger<WorkflowAuthorizationService>.Instance);
 
         Assert.True((await service.CanTransitionAsync("Action", "Open", "Unconfigured", ["gra"])).Allowed);

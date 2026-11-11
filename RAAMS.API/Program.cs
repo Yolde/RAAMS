@@ -7,6 +7,7 @@ using Microsoft.OpenApi;
 using RAAMS.API.Authorization;
 using RAAMS.API.Filters;
 using RAAMS.API.Services;
+using RAAMS.Application.Auditing;
 using RAAMS.Application.Authorization;
 using RAAMS.Application.Services;
 using RAAMS.Infrastructure.Data;
@@ -19,6 +20,7 @@ builder.Services.AddDbContext<RaamsDbContext>(options =>
 
 // ── Services ──
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuditContext, AuditContext>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IUserProvisioningService, UserProvisioningService>();

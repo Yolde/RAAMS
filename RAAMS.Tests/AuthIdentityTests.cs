@@ -7,9 +7,11 @@ using Moq;
 using RAAMS.API.Controllers;
 using RAAMS.API.Services;
 using RAAMS.Application.Auth;
+using RAAMS.Application.Auditing;
 using RAAMS.Application.Services;
 using RAAMS.Domain.Entities.Roles;
 using RAAMS.Infrastructure.Data;
+using RAAMS.Infrastructure.Auditing;
 
 namespace RAAMS.Tests;
 
@@ -22,7 +24,7 @@ public class AuthIdentityTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString(), options => options.EnableNullChecks(false))
             .Options;
         var currentUser = Mock.Of<ICurrentUserService>();
-        await using var db = new RaamsDbContext(options, currentUser);
+        await using var db = new RaamsDbContext(options, currentUser, Mock.Of<IAuditContext>(), NullLogger<AuditSaveChangesInterceptor>.Instance);
         var service = new UserProvisioningService(db, NullLogger<UserProvisioningService>.Instance);
         var subject = Guid.NewGuid();
         var userId = await service.EnsureUserExistsAsync(subject, "test@example.invalid", "Test User");

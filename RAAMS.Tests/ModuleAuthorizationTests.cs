@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using RAAMS.API.Authorization;
 using RAAMS.Application.Authorization;
+using RAAMS.Application.Auditing;
 using RAAMS.Application.Services;
 using RAAMS.Domain.Entities.Roles;
 using RAAMS.Infrastructure.Data;
@@ -39,6 +40,8 @@ public class ModuleAuthorizationTests
     {
         var services = new ServiceCollection();
         services.AddSingleton(Mock.Of<ICurrentUserService>());
+        services.AddSingleton(Mock.Of<IAuditContext>());
+        services.AddLogging();
         var databaseName = Guid.NewGuid().ToString();
         services.AddDbContext<RaamsDbContext>(o => o.UseInMemoryDatabase(databaseName));
         await using var container = services.BuildServiceProvider();

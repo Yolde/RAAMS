@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.Extensions.Logging;
+using RAAMS.Application.Auditing;
 using RAAMS.Application.Services;
 using RAAMS.Domain.Common;
 using RAAMS.Domain.Entities.Actions;
@@ -11,15 +13,25 @@ using RAAMS.Domain.Entities.Notifications;
 using RAAMS.Domain.Entities.Reviews;
 using RAAMS.Domain.Entities.Roles;
 using RAAMS.Domain.Entities.Users;
+using RAAMS.Infrastructure.Auditing;
 
 namespace RAAMS.Infrastructure.Data;
 
 public class RaamsDbContext : DbContext
 {
-    public RaamsDbContext(DbContextOptions<RaamsDbContext> options, ICurrentUserService currentUserService)
+    private readonly IAuditContext _auditContext;
+    private readonly AuditSaveChangesInterceptor _auditCapture;
+
+    public RaamsDbContext(
+        DbContextOptions<RaamsDbContext> options,
+        ICurrentUserService currentUserService,
+        IAuditContext auditContext,
+        ILogger<AuditSaveChangesInterceptor> logger)
         : base(options)
     {
         ArgumentNullException.ThrowIfNull(currentUserService);
+        _auditContext = auditContext ?? throw new ArgumentNullException(nameof(auditContext));
+        _auditCapture = new AuditSaveChangesInterceptor(_auditContext, logger);
         ChangeTracker.CascadeDeleteTiming = CascadeTiming.OnSaveChanges;
     }
 
@@ -55,13 +67,63 @@ public class RaamsDbContext : DbContext
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         PrepareChanges();
-        return base.SaveChanges(acceptAllChangesOnSuccess);
+        var changes = _auditCapture.GetChanges(this);
+        var audits = changes.Count == 0 ? [] : _auditCapture.Capture(this, changes, ResolveAuditUser());
+        try
+        {
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+        catch
+        {
+            DetachAudits(audits);
+            throw;
+        }
     }
 
-    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         PrepareChanges();
-        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        var changes = _auditCapture.GetChanges(this);
+        var audits = changes.Count == 0 ? [] : _auditCapture.Capture(this, changes, await ResolveAuditUserAsync(cancellationToken));
+        try
+        {
+            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+        catch
+        {
+            DetachAudits(audits);
+            throw;
+        }
+    }
+
+    private Guid? TrackedAuditUser(Guid subject) =>
+        ChangeTracker.Entries<User>()
+            .Where(entry => entry.State != EntityState.Deleted && entry.Entity.EntraObjectId == subject)
+            .Select(entry => (Guid?)entry.Entity.Id)
+            .FirstOrDefault();
+
+    private Guid? ResolveAuditUser()
+    {
+        if (_auditContext.UserId is not Guid subject)
+            return null;
+        return TrackedAuditUser(subject) ?? Users.IgnoreQueryFilters().AsNoTracking()
+            .Where(user => user.EntraObjectId == subject)
+            .Select(user => (Guid?)user.Id).SingleOrDefault();
+    }
+
+    private async Task<Guid?> ResolveAuditUserAsync(CancellationToken cancellationToken)
+    {
+        if (_auditContext.UserId is not Guid subject)
+            return null;
+        return TrackedAuditUser(subject) ?? await Users.IgnoreQueryFilters().AsNoTracking()
+            .Where(user => user.EntraObjectId == subject)
+            .Select(user => (Guid?)user.Id).SingleOrDefaultAsync(cancellationToken);
+    }
+
+    private void DetachAudits(IEnumerable<AuditTrail> audits)
+    {
+        foreach (var audit in audits)
+            Entry(audit).State = EntityState.Detached;
     }
 
     private void PrepareChanges()

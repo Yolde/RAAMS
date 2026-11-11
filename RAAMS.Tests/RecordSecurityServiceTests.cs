@@ -2,11 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 using RAAMS.API.Services;
 using RAAMS.Application.Services;
+using RAAMS.Application.Auditing;
 using RAAMS.Domain.Entities.Actions;
 using RAAMS.Domain.Entities.Assessments;
 using RAAMS.Domain.Entities.Findings;
 using RAAMS.Domain.Enums;
 using RAAMS.Infrastructure.Data;
+using RAAMS.Infrastructure.Auditing;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace RAAMS.Tests;
 
@@ -69,7 +72,7 @@ public class RecordSecurityServiceTests
         var options = new DbContextOptionsBuilder<RaamsDbContext>()
             .UseSqlServer("Server=localhost;Database=RAAMS_ModelOnly;Integrated Security=true;TrustServerCertificate=true")
             .Options;
-        using var db = new RaamsDbContext(options, Mock.Of<ICurrentUserService>());
+        using var db = new RaamsDbContext(options, Mock.Of<ICurrentUserService>(), Mock.Of<IAuditContext>(), NullLogger<AuditSaveChangesInterceptor>.Instance);
         var service = new RecordSecurityService();
         var user = Guid.NewGuid();
         var actionSql = service.ApplyActionFilter(db.Actions, ["Reviewer", "LeadAuditor", "ActionParty"], user).ToQueryString();

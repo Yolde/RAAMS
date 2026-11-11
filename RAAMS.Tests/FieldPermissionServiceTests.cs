@@ -5,9 +5,11 @@ using Microsoft.Extensions.Options;
 using Moq;
 using RAAMS.API.Services;
 using RAAMS.Application.Authorization;
+using RAAMS.Application.Auditing;
 using RAAMS.Application.Services;
 using RAAMS.Domain.Entities.Roles;
 using RAAMS.Infrastructure.Data;
+using RAAMS.Infrastructure.Auditing;
 
 namespace RAAMS.Tests;
 
@@ -19,7 +21,7 @@ public class FieldPermissionServiceTests
         var options = new DbContextOptionsBuilder<RaamsDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        await using var db = new RaamsDbContext(options, Mock.Of<ICurrentUserService>());
+        await using var db = new RaamsDbContext(options, Mock.Of<ICurrentUserService>(), Mock.Of<IAuditContext>(), NullLogger<AuditSaveChangesInterceptor>.Instance);
         var viewer = new Role { Id = Guid.NewGuid(), Name = "Viewer" };
         var editor = new Role { Id = Guid.NewGuid(), Name = "Editor" };
         db.FieldPermissions.AddRange(
@@ -43,7 +45,7 @@ public class FieldPermissionServiceTests
         var options = new DbContextOptionsBuilder<RaamsDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        await using var db = new RaamsDbContext(options, Mock.Of<ICurrentUserService>());
+        await using var db = new RaamsDbContext(options, Mock.Of<ICurrentUserService>(), Mock.Of<IAuditContext>(), NullLogger<AuditSaveChangesInterceptor>.Instance);
         var role = new Role { Id = Guid.NewGuid(), Name = "A|B" };
         db.FieldPermissions.Add(new FieldPermission
         {
