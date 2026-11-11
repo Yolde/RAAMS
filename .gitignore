@@ -480,3 +480,8 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Local dev artifacts — never commit
+RAAMS.API/token.txt
+RAAMS.API/test_user_guid.txt
+RAAMS.API/token
