@@ -20,6 +20,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IUserProvisioningService, UserProvisioningService>();
 builder.Services.AddScoped<IFieldPermissionService, FieldPermissionService>();
+builder.Services.AddScoped<IRecordSecurityService, RecordSecurityService>();
 
 // ── Authentication ──
 // ── Authentication ──
