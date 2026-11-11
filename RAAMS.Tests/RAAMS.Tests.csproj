@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\RAAMS.API\RAAMS.API.csproj" />
     <ProjectReference Include="..\RAAMS.Application\RAAMS.Application.csproj" />
     <ProjectReference Include="..\RAAMS.Infrastructure\RAAMS.Infrastructure.csproj" />
   </ItemGroup>

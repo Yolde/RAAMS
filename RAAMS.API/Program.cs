@@ -1,6 +1,10 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using RAAMS.Application.Services;
+using Microsoft.Identity.Web;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using RAAMS.API.Services;
+using RAAMS.Application.Services;
 using RAAMS.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,17 +16,94 @@ builder.Services.AddDbContext<RaamsDbContext>(options =>
 // ── Services ──
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IUserProvisioningService, UserProvisioningService>();
+
+// ── Authentication ──
+// ── Authentication ──
+var authMode = builder.Configuration["Authentication:Mode"] ?? "LocalJwt";
+
+if (authMode == "AzureAd")
+{
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+}
+else
+{
+    // dotnet user-jwts stores its HMAC signing key in user secrets.
+    var signingKeySection = builder.Configuration
+        .GetSection("Authentication:Schemes:Bearer:SigningKeys")
+        .GetChildren()
+        .FirstOrDefault();
+
+    if (signingKeySection == null)
+    {
+        throw new InvalidOperationException(
+            "No JWT signing key found. Run 'dotnet user-jwts key --reset' from the RAAMS.API folder.");
+    }
+
+    var signingKeyValue = signingKeySection["Value"]
+        ?? throw new InvalidOperationException("JWT signing key has no Value.");
+
+    var signingKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+        Convert.FromBase64String(signingKeyValue));
+
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.RequireHttpsMetadata = false;
+            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = signingKey,
+                RoleClaimType = "role",
+                NameClaimType = "sub",
+                ClockSkew = TimeSpan.FromMinutes(5)
+            };
+        });
+}
+// ── Authorization Policies ──
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireGRAAdmin", p => p.RequireRole("GRA", "SuperAdmin"));
+    options.AddPolicy("RequireLeadAuditor", p => p.RequireRole("LeadAuditor", "GRA", "SuperAdmin"));
+    options.AddPolicy("RequireAssuranceCoordinator", p => p.RequireRole("AssuranceCoordinator", "GRA", "SuperAdmin"));
+    options.AddPolicy("RequireAuditee", p => p.RequireRole("Auditee", "GRA", "SuperAdmin"));
+    options.AddPolicy("RequireActionParty", p => p.RequireRole("ActionParty", "GRA", "SuperAdmin"));
+    options.AddPolicy("RequireReviewer", p => p.RequireRole("Reviewer", "GRA", "SuperAdmin"));
+    options.AddPolicy("RequireSponsor", p => p.RequireRole("Sponsor", "GRA", "SuperAdmin"));
+});
 
 // ── Controllers ──
 builder.Services.AddControllers();
 
-// ── Swagger / OpenAPI ──
+// ── Swagger ──
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "RAAMS API", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header. Example: \"Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecuritySchemeReference("Bearer", document),
+            new List<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 
-// ── Pipeline ──
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -30,6 +111,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
