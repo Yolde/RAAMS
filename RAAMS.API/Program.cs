@@ -4,6 +4,7 @@ using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using RAAMS.API.Services;
+using RAAMS.Application.Authorization;
 using RAAMS.Application.Services;
 using RAAMS.Infrastructure.Data;
 
@@ -15,8 +16,10 @@ builder.Services.AddDbContext<RaamsDbContext>(options =>
 
 // ── Services ──
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IUserProvisioningService, UserProvisioningService>();
+builder.Services.AddScoped<IFieldPermissionService, FieldPermissionService>();
 
 // ── Authentication ──
 // ── Authentication ──
