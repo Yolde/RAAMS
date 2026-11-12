@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using RAAMS.Application.Authorization;
 using RAAMS.Application.Authorization.Attributes;
+using RAAMS.Application.Common;
 
 namespace RAAMS.API.Filters;
 
@@ -68,7 +69,13 @@ public class FieldMaskingFilter(ILogger<FieldMaskingFilter> logger) : IAsyncActi
             }
         }
 
-        if (result.Value is IEnumerable items and not string)
+        if (result.Value is IPaginatedResult page)
+        {
+            foreach (var item in page.Items)
+                if (item is not null)
+                    await MaskAsync(item);
+        }
+        else if (result.Value is IEnumerable items and not string)
         {
             var maskedItems = new List<object?>();
             foreach (var item in items)

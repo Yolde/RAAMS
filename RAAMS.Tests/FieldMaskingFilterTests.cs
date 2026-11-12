@@ -13,6 +13,8 @@ using RAAMS.API.Filters;
 using RAAMS.Application.Actions;
 using RAAMS.Application.Authorization;
 using RAAMS.Application.Authorization.Attributes;
+using RAAMS.Application.Common;
+using RAAMS.API.Controllers;
 
 namespace RAAMS.Tests;
 
@@ -140,6 +142,49 @@ public class FieldMaskingFilterTests
         Assert.Null(dto.TargetDate);
         Assert.Null(dto.ActionTaken);
         Assert.Null(dto.Status);
+    }
+
+    [Fact]
+    public async Task MasksPaginatedActionsWithoutChangingEnvelope()
+    {
+        var permission = new Mock<IFieldPermissionService>();
+        permission.Setup(p => p.GetAsync("Action", It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FieldPermissionResult(false, false));
+        var page = new PaginatedResult<ActionDto>(
+            [new ActionDto { TargetDate = new DateOnly(2027, 1, 1), Status = "Open", ActionTaken = "private" },
+             new ActionDto { TargetDate = new DateOnly(2027, 1, 2), Status = "Submitted", ActionTaken = "private" }],
+            11, 2, 2);
+        var result = new ObjectResult(page) { DeclaredType = typeof(PaginatedResult<ActionDto>) };
+        await RunAsync<ActionsController>(nameof(ActionsController.List), result, permission.Object);
+
+        Assert.Same(page, result.Value);
+        Assert.Equal(typeof(PaginatedResult<ActionDto>), result.DeclaredType);
+        Assert.Equal(11, page.TotalCount);
+        Assert.All(page.Items, dto =>
+        {
+            Assert.Null(dto.TargetDate);
+            Assert.Null(dto.Status);
+            Assert.Null(dto.ActionTaken);
+        });
+        permission.Verify(p => p.GetAsync("Action", "Status", It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task MasksMutationResultsOnActionsController()
+    {
+        var permission = new Mock<IFieldPermissionService>();
+        permission.Setup(p => p.GetAsync("Action", It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FieldPermissionResult(false, false));
+        foreach (var method in new[] { nameof(ActionsController.Create), nameof(ActionsController.Update),
+                     nameof(ActionsController.Submit), nameof(ActionsController.Approve),
+                     nameof(ActionsController.Reject), nameof(ActionsController.Reopen) })
+        {
+            var dto = new ActionDto { TargetDate = new DateOnly(2027, 1, 1), Status = "Open", ActionTaken = "private" };
+            await RunAsync<ActionsController>(method, new ObjectResult(dto), permission.Object);
+            Assert.Null(dto.TargetDate);
+            Assert.Null(dto.Status);
+            Assert.Null(dto.ActionTaken);
+        }
     }
 
     private static async Task RunAsync<TController>(
