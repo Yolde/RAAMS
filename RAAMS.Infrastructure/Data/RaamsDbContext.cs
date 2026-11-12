@@ -27,6 +27,15 @@ public class RaamsDbContext : DbContext
         ICurrentUserService currentUserService,
         IAuditContext auditContext,
         ILogger<AuditSaveChangesInterceptor> logger)
+        : this((DbContextOptions)options, currentUserService, auditContext, logger)
+    {
+    }
+
+    protected RaamsDbContext(
+        DbContextOptions options,
+        ICurrentUserService currentUserService,
+        IAuditContext auditContext,
+        ILogger<AuditSaveChangesInterceptor> logger)
         : base(options)
     {
         ArgumentNullException.ThrowIfNull(currentUserService);

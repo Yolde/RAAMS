@@ -63,24 +63,6 @@ if (authMode == "AzureAd")
 }
 else
 {
-    // dotnet user-jwts stores its HMAC signing key in user secrets.
-    var signingKeySection = builder.Configuration
-        .GetSection("Authentication:Schemes:Bearer:SigningKeys")
-        .GetChildren()
-        .FirstOrDefault();
-
-    if (signingKeySection == null)
-    {
-        throw new InvalidOperationException(
-            "No JWT signing key found. Run 'dotnet user-jwts key --reset' from the RAAMS.API folder.");
-    }
-
-    var signingKeyValue = signingKeySection["Value"]
-        ?? throw new InvalidOperationException("JWT signing key has no Value.");
-
-    var signingKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-        Convert.FromBase64String(signingKeyValue));
-
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
@@ -92,7 +74,7 @@ else
                 ValidateAudience = false,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = signingKey,
+                IssuerSigningKey = GetSigningKey(builder.Configuration),
                 RoleClaimType = "role",
                 NameClaimType = "sub",
                 ClockSkew = TimeSpan.FromMinutes(5)
@@ -139,6 +121,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+if (authMode != "AzureAd")
+    _ = GetSigningKey(app.Configuration);
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -154,5 +138,16 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static SymmetricSecurityKey GetSigningKey(IConfiguration configuration)
+{
+    var signingKeySection = configuration.GetSection("Authentication:Schemes:Bearer:SigningKeys")
+        .GetChildren().FirstOrDefault()
+        ?? throw new InvalidOperationException(
+            "No JWT signing key found. Run 'dotnet user-jwts key --reset' from the RAAMS.API folder.");
+    var signingKeyValue = signingKeySection["Value"]
+        ?? throw new InvalidOperationException("JWT signing key has no Value.");
+    return new SymmetricSecurityKey(Convert.FromBase64String(signingKeyValue));
+}
 
 public partial class Program { }

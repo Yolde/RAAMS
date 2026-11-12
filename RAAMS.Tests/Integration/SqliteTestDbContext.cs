@@ -8,7 +8,7 @@ using RAAMS.Infrastructure.Data;
 namespace RAAMS.Tests.Integration;
 
 internal sealed class SqliteTestDbContext(
-    DbContextOptions<RaamsDbContext> options,
+    DbContextOptions<SqliteTestDbContext> options,
     ICurrentUserService currentUser,
     IAuditContext audit,
     ILogger<AuditSaveChangesInterceptor> logger)
