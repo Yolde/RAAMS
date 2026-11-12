@@ -481,7 +481,7 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
-# Local dev artifacts � never commit
+# Local dev artifacts — never commit
 RAAMS.API/token.txt
 RAAMS.API/test_user_guid.txt
 RAAMS.API/token
@@ -494,3 +494,23 @@ body.json
 raams-ui/node_modules/
 raams-ui/dist/
 raams-ui/.vite/
+
+# ── Additions for RAAMS ──
+
+# Local SQLite databases (from EF Core integration tests)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# ASP.NET Core local overrides
+appsettings.Local.json
+appsettings.*.local.json
+
+# Vite env overrides (keep the base .env ignored, ignore local variants)
+raams-ui/.env.local
+raams-ui/.env.*.local
+
+# Temp test output
+test-output.txt
+
