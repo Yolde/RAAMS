@@ -130,10 +130,12 @@ public class AssessmentService(
 
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         // Share the assessment lock and version sequence with assessment-only evidence uploads.
-        assessment = await db.Assessments.FromSqlInterpolated(
-                $"SELECT * FROM dbo.Assessments WITH (UPDLOCK, HOLDLOCK) WHERE Id = {assessmentId} AND IsDeleted = 0")
-            .IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(ct)
-            ?? throw new ArgumentException("Assessment not found");
+assessment = await db.Assessments.FromSqlInterpolated(
+        $"SELECT * FROM dbo.Assessments WITH (UPDLOCK, HOLDLOCK) WHERE Id = {assessmentId} AND IsDeleted = 0")
+    .IgnoreQueryFilters().AsNoTracking()
+    .OrderBy(a => a.Id)          // determinism: silence EF10103
+    .FirstOrDefaultAsync(ct)
+    ?? throw new ArgumentException("Assessment not found");
         await ValidateEscalationWorkflowAsync(assessment, ct);
         var maxVersion = await db.Evidence.IgnoreQueryFilters()
             .Where(item => item.AssessmentId == assessmentId && item.ActionId == null)
