@@ -1,32 +1,22 @@
-# React + TypeScript + Vite
+# RAAMS frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The development sign-in accepts a `dotnet user-jwts` token and stores it in
+browser local storage. This is a development shim, not MSAL or a production
+authentication flow. The browser does not verify the JWT signature; the API
+does. Do not use real or sensitive credentials with this development flow.
 
-Currently, two official plugins are available:
+From the API project directory, create a token with a GUID subject and an
+email claim (required by `/api/auth/me`):
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```powershell
+dotnet user-jwts create --name <guid> --role GRA --role SuperAdmin --claim email=you@example.com
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Paste the generated token into the sign-in page. The API maps the token's
+`unique_name` claim to the display name. The API must be running separately
+at `https://localhost:7014`; accept its development HTTPS certificate in the
+browser by visiting `https://localhost:7014/api/auth/ping` once. That endpoint
+requires authentication, so an unauthorized response after accepting the
+certificate is expected.
+
+Run `npm run build` to type-check and build the frontend.
