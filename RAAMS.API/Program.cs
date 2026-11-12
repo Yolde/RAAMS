@@ -24,6 +24,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<RaamsDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:5173", "https://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 // ── Services ──
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditContext, AuditContext>();
@@ -137,6 +148,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

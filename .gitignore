@@ -489,3 +489,8 @@ RAAMS.API/token
 # Test artifacts (contain live tokens or request bodies)
 RAAMS.API/ap_token.txt
 body.json
+
+# React frontend
+raams-ui/node_modules/
+raams-ui/dist/
+raams-ui/.vite/
