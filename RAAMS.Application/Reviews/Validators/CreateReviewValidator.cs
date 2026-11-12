@@ -16,5 +16,8 @@ public class CreateReviewValidator : AbstractValidator<CreateReviewDto>
             .When(x => x.ReasonCode is not null)
             .WithMessage("ReasonCode is not valid.");
         RuleFor(x => x.Comments).MaximumLength(2000);
+        RuleFor(x => x.Comments).MaximumLength(500)
+            .When(x => x.Outcome == "Ineffective")
+            .WithMessage("Comments for an ineffective review must be at most 500 characters.");
     }
 }
