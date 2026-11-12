@@ -8,7 +8,7 @@ using RAAMS.Infrastructure.Data;
 
 namespace RAAMS.Tests.Integration;
 
-public sealed record TestData(Guid HarunId, Guid ApId, Guid AuId, Guid AssessmentId, Guid FindingId, Guid ActionId);
+public sealed record TestData(Guid HarunId, Guid ApId, Guid AuId, Guid ReviewerId, Guid AssessmentId, Guid FindingId, Guid ActionId);
 
 public static class TestSeeder
 {
@@ -125,8 +125,9 @@ public static class TestSeeder
         var harun = User("Harun", "harun@example.invalid");
         var ap = User("AP User", "ap@example.invalid");
         var au = User("AU User", "au@example.invalid");
-        db.Users.AddRange(harun, ap, au);
-        foreach (var (user, role) in new[] { (harun, "GRA"), (harun, "SuperAdmin"), (ap, "ActionParty"), (au, "Auditee") })
+        var reviewer = User("Reviewer", "reviewer@example.invalid");
+        db.Users.AddRange(harun, ap, au, reviewer);
+        foreach (var (user, role) in new[] { (harun, "GRA"), (harun, "SuperAdmin"), (ap, "ActionParty"), (au, "Auditee"), (reviewer, "Reviewer") })
             db.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = roles[role].Id, EffectiveFrom = DateTime.UtcNow.AddDays(-1) });
 
         var assessment = new Assessment
@@ -153,6 +154,6 @@ public static class TestSeeder
         db.Findings.Add(finding);
         db.Actions.Add(action);
         await db.SaveChangesAsync();
-        return new TestData(harun.Id, ap.Id, au.Id, assessment.Id, finding.Id, action.Id);
+        return new TestData(harun.Id, ap.Id, au.Id, reviewer.Id, assessment.Id, finding.Id, action.Id);
     }
 }
