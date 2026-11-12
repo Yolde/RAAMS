@@ -1,4 +1,4 @@
-namespace RAAMS.API.Filters;
+namespace RAAMS.Application.Authorization.Attributes;
 
 [AttributeUsage(AttributeTargets.Property, Inherited = true)]
 public class MaskablePropertyAttribute : Attribute

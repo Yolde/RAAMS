@@ -10,7 +10,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using RAAMS.API.Filters;
+using RAAMS.Application.Actions;
 using RAAMS.Application.Authorization;
+using RAAMS.Application.Authorization.Attributes;
 
 namespace RAAMS.Tests;
 
@@ -120,6 +122,24 @@ public class FieldMaskingFilterTests
             .ReturnsAsync(new FieldPermissionResult(false, false));
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             RunAsync<MaskedController>(nameof(MaskedController.Normal), new ObjectResult(new ReadOnlyDto()), permission.Object));
+    }
+
+    [Fact]
+    public async Task MasksBusinessActionDtoUsingMovedAttributes()
+    {
+        var permission = new Mock<IFieldPermissionService>();
+        permission.Setup(p => p.GetAsync("Action", It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FieldPermissionResult(false, false));
+        var dto = new ActionDto
+        {
+            TargetDate = new DateOnly(2026, 12, 1),
+            ActionTaken = "private",
+            Status = "Open"
+        };
+        await RunAsync<MaskedController>(nameof(MaskedController.Normal), new ObjectResult(dto), permission.Object);
+        Assert.Null(dto.TargetDate);
+        Assert.Null(dto.ActionTaken);
+        Assert.Null(dto.Status);
     }
 
     private static async Task RunAsync<TController>(

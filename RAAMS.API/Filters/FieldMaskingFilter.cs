@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using RAAMS.Application.Authorization;
+using RAAMS.Application.Authorization.Attributes;
 
 namespace RAAMS.API.Filters;
 
