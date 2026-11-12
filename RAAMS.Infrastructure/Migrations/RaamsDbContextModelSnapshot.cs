@@ -384,7 +384,6 @@ namespace RAAMS.Infrastructure.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("FileHash")
-                        .IsRequired()
                         .HasColumnType("char(64)");
 
                     b.Property<string>("FileName")
@@ -398,12 +397,10 @@ namespace RAAMS.Infrastructure.Migrations
                         .HasDefaultValue(false);
 
                     b.Property<string>("SharePointItemId")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("SharePointUrl")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 

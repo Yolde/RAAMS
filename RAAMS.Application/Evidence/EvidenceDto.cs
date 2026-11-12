@@ -10,5 +10,5 @@ public class EvidenceDto
     public int Version { get; set; }
     public string UploadedByName { get; set; } = null!;
     public DateTime UploadedAt { get; set; }
-    public string SharePointUrl { get; set; } = null!;
+    public string? SharePointUrl { get; set; }
 }

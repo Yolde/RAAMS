@@ -17,9 +17,9 @@ public class EvidenceConfiguration : IEntityTypeConfiguration<EvidenceItem>
         builder.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
         builder.Property(e => e.FileName).HasMaxLength(255).IsRequired();
         builder.Property(e => e.ContentType).HasMaxLength(100).IsRequired();
-        builder.Property(e => e.SharePointItemId).HasMaxLength(255).IsRequired();
-        builder.Property(e => e.SharePointUrl).HasMaxLength(500).IsRequired();
-        builder.Property(e => e.FileHash).HasColumnType("char(64)").IsRequired();
+        builder.Property(e => e.SharePointItemId).HasMaxLength(255);
+        builder.Property(e => e.SharePointUrl).HasMaxLength(500);
+        builder.Property(e => e.FileHash).HasColumnType("char(64)");
         builder.Property(e => e.UploadedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         builder.Property(e => e.IsDeleted).HasDefaultValue(false);
         builder.HasOne(e => e.Action).WithMany(e => e.Evidence).HasForeignKey(e => e.ActionId).OnDelete(DeleteBehavior.NoAction);

@@ -11,10 +11,10 @@ public class EvidenceItem : IEntity, ISoftDelete
     public string FileName { get; set; } = null!;
     public string ContentType { get; set; } = null!;
     public long SizeBytes { get; set; }
-    public string SharePointItemId { get; set; } = null!;
-    public string SharePointUrl { get; set; } = null!;
+    public string? SharePointItemId { get; set; }
+    public string? SharePointUrl { get; set; }
     public int Version { get; set; }
-    public string FileHash { get; set; } = null!;
+    public string? FileHash { get; set; }
     public Guid UploadedById { get; set; }
     public DateTime UploadedAt { get; set; }
     public bool IsDeleted { get; set; }
