@@ -8,6 +8,7 @@ using RAAMS.API.Authorization;
 using RAAMS.API.Filters;
 using RAAMS.API.Exceptions;
 using RAAMS.Application.Assessments;
+using RAAMS.Application.Findings;
 using RAAMS.API.Services;
 using RAAMS.Application.Auditing;
 using RAAMS.Application.Authorization;
@@ -30,6 +31,7 @@ builder.Services.AddScoped<IFieldPermissionService, FieldPermissionService>();
 builder.Services.AddScoped<IRecordSecurityService, RecordSecurityService>();
 builder.Services.AddScoped<IWorkflowAuthorizationService, WorkflowAuthorizationService>();
 builder.Services.AddScoped<IAssessmentService, AssessmentService>();
+builder.Services.AddScoped<IFindingService, FindingService>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 

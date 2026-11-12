@@ -10,7 +10,7 @@ public class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICur
             ? httpContextAccessor.HttpContext.User
             : null;
 
-    public Guid? UserId => Guid.TryParse(User?.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
+    public Guid? UserId => Guid.TryParse(User?.FindFirstValue("sub") ?? User?.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
     public string? Email => User?.FindFirstValue(ClaimTypes.Email) ?? User?.FindFirstValue("email");
     public string? Role => User?.FindFirstValue("role") ?? User?.FindFirstValue(ClaimTypes.Role);
     public IEnumerable<string> Roles
