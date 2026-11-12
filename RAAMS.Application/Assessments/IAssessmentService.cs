@@ -9,4 +9,7 @@ public interface IAssessmentService
     Task<AssessmentDto> CreateAsync(CreateAssessmentDto dto, CancellationToken ct = default);
     Task<AssessmentDto> UpdateAsync(Guid id, UpdateAssessmentDto dto, CancellationToken ct = default);
     Task<AssessmentDto> ChangeStatusAsync(Guid id, ChangeAssessmentStatusDto dto, CancellationToken ct = default);
+    Task<EscalationEmailDto> UploadEscalationEmailAsync(Guid assessmentId, UploadEscalationEmailDto dto, Stream content, CancellationToken ct = default);
+    Task<IReadOnlyList<EscalationEmailDto>> ListEscalationEmailsAsync(Guid assessmentId, CancellationToken ct = default);
+    Task<EscalationEmailFile?> GetEscalationEmailFileAsync(Guid assessmentId, Guid emailId, CancellationToken ct = default);
 }

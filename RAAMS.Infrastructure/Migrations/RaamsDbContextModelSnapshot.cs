@@ -393,6 +393,20 @@ namespace RAAMS.Infrastructure.Migrations
                     b.ToTable("AuditTrails", (string)null);
                 });
 
+            modelBuilder.Entity("RAAMS.Domain.Entities.Evidence.EvidenceContent", b =>
+                {
+                    b.Property<Guid>("EvidenceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.HasKey("EvidenceId");
+
+                    b.ToTable("EvidenceContents", (string)null);
+                });
+
             modelBuilder.Entity("RAAMS.Domain.Entities.Evidence.EvidenceItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1051,6 +1065,17 @@ namespace RAAMS.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("RAAMS.Domain.Entities.Evidence.EvidenceContent", b =>
+                {
+                    b.HasOne("RAAMS.Domain.Entities.Evidence.EvidenceItem", "Evidence")
+                        .WithOne()
+                        .HasForeignKey("RAAMS.Domain.Entities.Evidence.EvidenceContent", "EvidenceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Evidence");
                 });
 
             modelBuilder.Entity("RAAMS.Domain.Entities.Evidence.EvidenceItem", b =>

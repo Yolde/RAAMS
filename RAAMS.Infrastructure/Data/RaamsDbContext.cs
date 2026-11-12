@@ -49,6 +49,7 @@ public class RaamsDbContext : DbContext
     public DbSet<ActionEntity> Actions => Set<ActionEntity>();
     public DbSet<ActionStatusHistory> ActionStatusHistories => Set<ActionStatusHistory>();
     public DbSet<EvidenceItem> Evidence => Set<EvidenceItem>();
+    public DbSet<EvidenceContent> EvidenceContents => Set<EvidenceContent>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AuditTrail> AuditTrails => Set<AuditTrail>();

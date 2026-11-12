@@ -1,6 +1,8 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 using System.Linq.Expressions;
+using System.Security.Cryptography;
 using RAAMS.Application.Assessments;
 using RAAMS.Application.Assessments.Validators;
 using RAAMS.Application.Auditing;
@@ -9,6 +11,7 @@ using RAAMS.Application.Common;
 using RAAMS.Application.Common.Exceptions;
 using RAAMS.Application.Services;
 using RAAMS.Domain.Entities.Assessments;
+using RAAMS.Domain.Entities.Evidence;
 using RAAMS.Domain.Enums;
 using RAAMS.Infrastructure.Data;
 
@@ -43,6 +46,115 @@ public class AssessmentService(
         CreatedDate = assessment.CreatedDate,
         ModifiedDate = assessment.ModifiedDate
     };
+
+    private static readonly Expression<Func<EvidenceItem, EscalationEmailDto>> EscalationProjection = item => new()
+    {
+        Id = item.Id,
+        AssessmentId = item.AssessmentId!.Value,
+        AssessmentReference = item.Assessment!.ReferenceNumber,
+        FileName = item.FileName,
+        ContentType = item.ContentType,
+        SizeBytes = item.SizeBytes,
+        UploadedByName = item.UploadedBy.DisplayName,
+        UploadedAt = item.UploadedAt
+    };
+
+    private IQueryable<EvidenceItem> EscalationEmails(Guid assessmentId) =>
+        db.Evidence.IgnoreQueryFilters().AsNoTracking()
+            .Where(item => !item.IsDeleted && item.AssessmentId == assessmentId &&
+                item.ActionId == null);
+
+    public async Task<IReadOnlyList<EscalationEmailDto>> ListEscalationEmailsAsync(Guid assessmentId, CancellationToken ct = default) =>
+        await EscalationEmails(assessmentId).OrderByDescending(item => item.UploadedAt)
+            .ThenBy(item => item.Id).Select(EscalationProjection).ToListAsync(ct);
+
+    public async Task<EscalationEmailFile?> GetEscalationEmailFileAsync(Guid assessmentId, Guid emailId, CancellationToken ct = default) =>
+        await (from item in EscalationEmails(assessmentId)
+               join content in db.EvidenceContents.AsNoTracking() on item.Id equals content.EvidenceId
+               where item.Id == emailId
+               select new EscalationEmailFile(item.FileName, item.ContentType, content.Data))
+            .SingleOrDefaultAsync(ct);
+
+    private async Task ValidateEscalationWorkflowAsync(Assessment assessment, CancellationToken ct)
+    {
+        if (assessment.Opinion is not (AssessmentOpinion.Unsatisfactory or AssessmentOpinion.Unacceptable) &&
+            !await db.Findings.AnyAsync(finding => finding.AssessmentId == assessment.Id &&
+                finding.Severity == FindingSeverity.High && !finding.IsDeleted, ct))
+            throw new WorkflowViolationException("Escalation email only required for Unsatisfactory/Unacceptable or high-severity assessments");
+
+        var openCount = await db.Actions.CountAsync(action => !action.IsDeleted &&
+            action.Status != ActionStatus.Closed && db.Findings.Any(finding =>
+                finding.Id == action.FindingId && finding.AssessmentId == assessment.Id), ct);
+        if (openCount > 0)
+            throw new WorkflowViolationException($"{openCount} action(s) must be closed first");
+    }
+
+    public async Task<EscalationEmailDto> UploadEscalationEmailAsync(
+        Guid assessmentId, UploadEscalationEmailDto dto, Stream content, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(dto);
+        ArgumentNullException.ThrowIfNull(content);
+        if (currentUser.UserId is not Guid subject || subject == Guid.Empty)
+            throw new ForbiddenException("Authentication required");
+        if (!currentUser.Roles.Any(role => string.Equals(role, "Auditee", StringComparison.OrdinalIgnoreCase) ||
+                                            string.Equals(role, "GRA", StringComparison.OrdinalIgnoreCase)))
+            throw new ForbiddenException("Only Auditee or GRA can upload escalation emails");
+
+        var userId = await db.Users.AsNoTracking().Where(user => user.EntraObjectId == subject)
+            .Select(user => user.Id).SingleOrDefaultAsync(ct);
+        if (userId == Guid.Empty)
+            throw new ForbiddenException("A registered user is required to upload escalation emails.");
+        var assessment = await db.Assessments.AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == assessmentId && !item.IsDeleted, ct)
+            ?? throw new ArgumentException("Assessment not found");
+        await ValidateEscalationWorkflowAsync(assessment, ct);
+        await new UploadEscalationEmailValidator().ValidateAndThrowAsync(dto, ct);
+        const int maxSize = 20 * 1024 * 1024;
+        using var buffer = new MemoryStream();
+        var chunk = new byte[81920];
+        int read;
+        while ((read = await content.ReadAsync(chunk.AsMemory(), ct)) != 0)
+        {
+            if (buffer.Length + read > maxSize)
+                throw new ValidationException("Email file must not exceed 20 MB.");
+            await buffer.WriteAsync(chunk.AsMemory(0, read), ct);
+        }
+        if (buffer.Length == 0 || buffer.Length != dto.SizeBytes)
+            throw new ValidationException("Email file size does not match the uploaded content.");
+        var data = buffer.ToArray();
+        var reason = $"Escalation email uploaded for {assessment.ReferenceNumber}: {dto.FileName}";
+        if (!string.IsNullOrWhiteSpace(dto.Notes))
+            reason += $"; Notes: {dto.Notes}";
+        if (reason.Length > 500)
+            throw new ValidationException("The audit reason including notes must not exceed 500 characters.");
+
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        // Share the assessment lock and version sequence with assessment-only evidence uploads.
+        assessment = await db.Assessments.FromSqlInterpolated(
+                $"SELECT * FROM dbo.Assessments WITH (UPDLOCK, HOLDLOCK) WHERE Id = {assessmentId} AND IsDeleted = 0")
+            .IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(ct)
+            ?? throw new ArgumentException("Assessment not found");
+        await ValidateEscalationWorkflowAsync(assessment, ct);
+        var maxVersion = await db.Evidence.IgnoreQueryFilters()
+            .Where(item => item.AssessmentId == assessmentId && item.ActionId == null)
+            .MaxAsync(item => (int?)item.Version, ct) ?? 0;
+        var item = new EvidenceItem
+        {
+            Id = Guid.NewGuid(), AssessmentId = assessmentId, ActionId = null,
+            FileName = dto.FileName, ContentType = dto.ContentType, SizeBytes = dto.SizeBytes,
+            Version = checked(maxVersion + 1), UploadedById = userId, UploadedAt = DateTime.UtcNow,
+            FileHash = Convert.ToHexString(SHA256.HashData(data)).ToLowerInvariant()
+        };
+        db.Evidence.Add(item);
+        db.EvidenceContents.Add(new EvidenceContent { EvidenceId = item.Id, Data = data });
+        auditContext.SetReason(reason);
+        await db.SaveChangesAsync(ct);
+        var result = await EscalationEmails(assessmentId).Where(email => email.Id == item.Id)
+            .Select(EscalationProjection).SingleAsync(ct);
+        await transaction.CommitAsync(ct);
+        logger.LogInformation("Created escalation email {EvidenceId} for assessment {AssessmentId}", item.Id, assessmentId);
+        return result;
+    }
 
     private async Task<Guid> ResolveCurrentUserIdAsync(CancellationToken ct)
     {
