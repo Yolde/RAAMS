@@ -4,6 +4,7 @@ public class UpdateActionDto
 {
     public string ActionDescription { get; set; } = null!;
     public string ActionRequired { get; set; } = null!;
+    public string? Reportable { get; set; }
     // Non-GRA callers may omit protected fields; GRA updates require all three.
     public Guid? ActionPartyId { get; set; }
     public Guid? AuditeeId { get; set; }

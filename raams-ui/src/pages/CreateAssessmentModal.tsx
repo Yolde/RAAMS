@@ -8,6 +8,7 @@ import { getErrorMessage } from '../api/errors'
 import { useCreateAssessment } from '../api/queries'
 
 const quarters = ['Q1', 'Q2', 'Q3', 'Q4']
+const linesOfDefence = ['LOD1', 'LOD2', 'LOD3']
 const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const emptyGuid = '00000000-0000-0000-0000-000000000000'
 
@@ -29,6 +30,7 @@ export function CreateAssessmentModal({ open, onClose, onCreated }: Props) {
   const [scope, setScope] = useState('')
   const [functionName, setFunctionName] = useState('')
   const [quarter, setQuarter] = useState('Q1')
+  const [lineOfDefence, setLineOfDefence] = useState('LOD1')
   const [year, setYear] = useState(String(new Date().getFullYear()))
   const [leadAuditorId, setLeadAuditorId] = useState('')
   const [coordinatorId, setCoordinatorId] = useState('')
@@ -40,6 +42,7 @@ export function CreateAssessmentModal({ open, onClose, onCreated }: Props) {
     setScope('')
     setFunctionName('')
     setQuarter('Q1')
+    setLineOfDefence('LOD1')
     setYear(String(new Date().getFullYear()))
     setLeadAuditorId('')
     setCoordinatorId('')
@@ -70,7 +73,7 @@ export function CreateAssessmentModal({ open, onClose, onCreated }: Props) {
     }
     try {
       const created = await mutation.mutateAsync({
-        name: name.trim(), scope: scope.trim(), function: functionName.trim(), quarter, year: numericYear,
+        name: name.trim(), scope: scope.trim(), function: functionName.trim(), quarter, year: numericYear, lineOfDefence,
         leadAuditorId: lead, coordinatorId: coordinator,
       })
       onCreated(created.referenceNumber)
@@ -78,6 +81,7 @@ export function CreateAssessmentModal({ open, onClose, onCreated }: Props) {
       setScope('')
       setFunctionName('')
       setQuarter('Q1')
+      setLineOfDefence('LOD1')
       setYear(String(new Date().getFullYear()))
       setLeadAuditorId('')
       setCoordinatorId('')
@@ -111,6 +115,13 @@ export function CreateAssessmentModal({ open, onClose, onCreated }: Props) {
                   if (data.optionValue) setQuarter(data.optionValue)
                 }}>
                   {quarters.map((option) => <Option key={option} value={option}>{option}</Option>)}
+                </Dropdown>
+              </Field>
+              <Field label="Line of Defence" required>
+                <Dropdown value={lineOfDefence} selectedOptions={[lineOfDefence]} onOptionSelect={(_, data) => {
+                  if (data.optionValue) setLineOfDefence(data.optionValue)
+                }}>
+                  {linesOfDefence.map((option) => <Option key={option} value={option}>{option}</Option>)}
                 </Dropdown>
               </Field>
               <Field label="Year" required>

@@ -40,6 +40,8 @@ export interface Assessment {
   function: string
   quarter: string
   year: number
+  lineOfDefence: string
+  opinion: string
   leadAuditorId: string
   leadAuditorName: string
   coordinatorId: string
@@ -57,6 +59,8 @@ export interface CreateAssessment {
   function: string
   quarter: string
   year: number
+  lineOfDefence: string
+  opinion?: string
   leadAuditorId: string
   coordinatorId: string
 }
@@ -74,6 +78,7 @@ export interface Action {
   findingId: string
   findingReference: string
   referenceNumber: string
+  reportable: string
   actionDescription: string
   actionRequired: string
   actionPartyId: string

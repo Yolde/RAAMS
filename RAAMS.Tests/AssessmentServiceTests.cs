@@ -58,10 +58,12 @@ public class AssessmentServiceTests
         var dto = new CreateAssessmentDto
         {
             Name = "First", Scope = "Scope", Function = "Finance", Quarter = "Q2", Year = 2026,
-            LeadAuditorId = userId, CoordinatorId = userId
+            LeadAuditorId = userId, CoordinatorId = userId, LineOfDefence = "LOD2", Opinion = "Satisfactory"
         };
         var created = await service.CreateAsync(dto);
         Assert.Equal("RA-2026-Q2-0001", created.ReferenceNumber);
+        Assert.Equal("LOD2", created.LineOfDefence);
+        Assert.Equal("Satisfactory", created.Opinion);
         Assert.Equal(nameof(AssessmentStatus.Planned), created.Status);
         Assert.Equal(userId, created.LeadAuditorId);
         Assert.NotEqual(Guid.Empty, created.Id);
@@ -69,9 +71,17 @@ public class AssessmentServiceTests
         var updated = await service.UpdateAsync(created.Id, new UpdateAssessmentDto
         {
             Name = "Updated", Scope = "New scope", Function = "Finance", Quarter = "Q2", Year = 2026,
-            LeadAuditorId = userId, CoordinatorId = userId, ReferenceNumber = "ignored"
+            LeadAuditorId = userId, CoordinatorId = userId, ReferenceNumber = "ignored", LineOfDefence = "LOD3"
         });
         Assert.Equal("Updated", updated.Name);
+        Assert.Equal("LOD3", updated.LineOfDefence);
+        Assert.Equal("Satisfactory", updated.Opinion);
+        var defaultOpinion = await service.CreateAsync(new CreateAssessmentDto
+        {
+            Name = "Default", Scope = "Scope", Function = "Finance", Quarter = "Q2", Year = 2026,
+            LeadAuditorId = userId, CoordinatorId = userId, LineOfDefence = "LOD1"
+        });
+        Assert.Equal("NotRated", defaultOpinion.Opinion);
         Assert.NotNull(await service.GetByIdAsync(created.Id));
     }
 

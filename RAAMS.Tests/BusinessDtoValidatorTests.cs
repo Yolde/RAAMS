@@ -22,14 +22,23 @@ public class BusinessDtoValidatorTests
         var dto = new CreateAssessmentDto
         {
             Name = "Assessment", Scope = "Scope", Function = "F", Quarter = "Q1", Year = 2000,
-            LeadAuditorId = Guid.NewGuid(), CoordinatorId = Guid.NewGuid()
+            LeadAuditorId = Guid.NewGuid(), CoordinatorId = Guid.NewGuid(), LineOfDefence = "LOD1"
         };
         var validator = new CreateAssessmentValidator();
         Assert.True(validator.Validate(dto).IsValid);
+        dto.LineOfDefence = "3";
+        Assert.False(validator.Validate(dto).IsValid);
+        dto.LineOfDefence = "LOD1";
+        dto.Opinion = "invalid";
+        Assert.False(validator.Validate(dto).IsValid);
+        dto.Opinion = null;
+        dto.LineOfDefence = null!;
+        Assert.False(validator.Validate(dto).IsValid);
+        dto.LineOfDefence = "LOD1";
         Assert.False(new UpdateAssessmentValidator().Validate(new UpdateAssessmentDto
         {
             Name = dto.Name, Scope = dto.Scope, Function = dto.Function, Quarter = dto.Quarter, Year = dto.Year,
-            LeadAuditorId = dto.LeadAuditorId, CoordinatorId = dto.CoordinatorId
+            LeadAuditorId = dto.LeadAuditorId, CoordinatorId = dto.CoordinatorId, LineOfDefence = dto.LineOfDefence
         }).IsValid);
         dto.Year = 2101;
         dto.Quarter = "Q5";
@@ -53,6 +62,15 @@ public class BusinessDtoValidatorTests
         };
         var validator = new CreateActionValidator();
         Assert.True(validator.Validate(dto).IsValid);
+        dto.Reportable = "CEO";
+        Assert.True(validator.Validate(dto).IsValid);
+        dto.Reportable = "1";
+        Assert.False(validator.Validate(dto).IsValid);
+        dto.Reportable = "NonCEO";
+        var update = new UpdateActionDto { ActionDescription = "D", ActionRequired = "R", Reportable = "bogus" };
+        Assert.False(new UpdateActionValidator().Validate(update).IsValid);
+        update.Reportable = null;
+        Assert.True(new UpdateActionValidator().Validate(update).IsValid);
         dto.TargetDate = DateOnly.FromDateTime(DateTime.UtcNow);
         Assert.False(validator.Validate(dto).IsValid);
         dto.TargetDate = dto.TargetDate.AddDays(1);

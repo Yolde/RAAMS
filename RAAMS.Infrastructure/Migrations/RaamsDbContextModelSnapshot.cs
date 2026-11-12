@@ -79,6 +79,13 @@ namespace RAAMS.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("Reportable")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("NonCEO");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -106,6 +113,8 @@ namespace RAAMS.Infrastructure.Migrations
                     b.HasIndex("ReferenceNumber")
                         .IsUnique()
                         .HasDatabaseName("UQ_Actions_ReferenceNumber");
+
+                    b.HasIndex("Reportable");
 
                     b.HasIndex("ActionPartyId", "Status")
                         .HasDatabaseName("IX_Actions_ActionPartyId_Status");
@@ -210,6 +219,13 @@ namespace RAAMS.Infrastructure.Migrations
                     b.Property<Guid>("LeadAuditorId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("LineOfDefence")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("LOD1");
+
                     b.Property<DateTime>("ModifiedDate")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(3)
@@ -220,6 +236,13 @@ namespace RAAMS.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Opinion")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("NotRated");
 
                     b.Property<string>("Quarter")
                         .IsRequired()
@@ -253,6 +276,8 @@ namespace RAAMS.Infrastructure.Migrations
                     b.HasIndex("CoordinatorId");
 
                     b.HasIndex("LeadAuditorId");
+
+                    b.HasIndex("LineOfDefence");
 
                     b.HasIndex("ReferenceNumber")
                         .IsUnique()
@@ -375,7 +400,10 @@ namespace RAAMS.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWSEQUENTIALID()");
 
-                    b.Property<Guid>("ActionId")
+                    b.Property<Guid?>("ActionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AssessmentId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ContentType")
@@ -423,10 +451,14 @@ namespace RAAMS.Infrastructure.Migrations
 
                     b.HasIndex("ActionId");
 
+                    b.HasIndex("AssessmentId");
+
                     b.HasIndex("UploadedById");
 
                     b.ToTable("Evidence", null, t =>
                         {
+                            t.HasCheckConstraint("CK_Evidence_OneParent", "[ActionId] IS NOT NULL OR [AssessmentId] IS NOT NULL");
+
                             t.HasCheckConstraint("CK_Evidence_SizeBytes", "[SizeBytes] >= 0");
 
                             t.HasCheckConstraint("CK_Evidence_Version", "[Version] > 0");
@@ -1026,8 +1058,12 @@ namespace RAAMS.Infrastructure.Migrations
                     b.HasOne("RAAMS.Domain.Entities.Actions.ActionEntity", "Action")
                         .WithMany("Evidence")
                         .HasForeignKey("ActionId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("RAAMS.Domain.Entities.Assessments.Assessment", "Assessment")
+                        .WithMany()
+                        .HasForeignKey("AssessmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("RAAMS.Domain.Entities.Users.User", "UploadedBy")
                         .WithMany("UploadedEvidence")
@@ -1036,6 +1072,8 @@ namespace RAAMS.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Action");
+
+                    b.Navigation("Assessment");
 
                     b.Navigation("UploadedBy");
                 });

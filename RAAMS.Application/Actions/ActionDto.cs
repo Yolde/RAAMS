@@ -8,6 +8,7 @@ public class ActionDto
     public Guid FindingId { get; set; }
     public string FindingReference { get; set; } = null!;
     public string ReferenceNumber { get; set; } = null!;
+    public string Reportable { get; set; } = null!;
     public string ActionDescription { get; set; } = null!;
     public string ActionRequired { get; set; } = null!;
     public Guid ActionPartyId { get; set; }

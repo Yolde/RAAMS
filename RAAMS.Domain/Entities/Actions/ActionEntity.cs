@@ -19,6 +19,7 @@ public class ActionEntity : IEntity, ICreatedEntity, IModifiedEntity, ISoftDelet
     public DateOnly TargetDate { get; set; }
     public string? ActionTaken { get; set; }
     public ActionStatus Status { get; set; }
+    public Reportable Reportable { get; set; } = Reportable.NonCEO;
     public DateTime? SubmittedDate { get; set; }
     public DateTime? ApprovedDate { get; set; }
     public DateTime? ClosedDate { get; set; }

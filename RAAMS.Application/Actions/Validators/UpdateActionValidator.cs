@@ -8,6 +8,7 @@ public class UpdateActionValidator : AbstractValidator<UpdateActionDto>
     {
         RuleFor(x => x.ActionDescription).NotEmpty().MaximumLength(2000);
         RuleFor(x => x.ActionRequired).NotEmpty().MaximumLength(2000);
+        RuleFor(x => x.Reportable).Must(value => value is "CEO" or "NonCEO").When(x => x.Reportable is not null);
         RuleFor(x => x.ActionPartyId).NotEmpty().When(x => x.ActionPartyId.HasValue);
         RuleFor(x => x.AuditeeId).NotEmpty().When(x => x.AuditeeId.HasValue);
         RuleFor(x => x.TargetDate).NotEmpty().When(x => x.TargetDate.HasValue);

@@ -9,6 +9,8 @@ public class AssessmentDto
     public string Function { get; set; } = null!;
     public string Quarter { get; set; } = null!;
     public int Year { get; set; }
+    public string LineOfDefence { get; set; } = null!;
+    public string Opinion { get; set; } = null!;
     public Guid LeadAuditorId { get; set; }
     public string LeadAuditorName { get; set; } = null!;
     public Guid CoordinatorId { get; set; }

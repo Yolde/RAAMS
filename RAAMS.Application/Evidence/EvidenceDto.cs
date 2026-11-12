@@ -3,7 +3,8 @@ namespace RAAMS.Application.Evidence;
 public class EvidenceDto
 {
     public Guid Id { get; set; }
-    public Guid ActionId { get; set; }
+    public Guid? ActionId { get; set; }
+    public Guid? AssessmentId { get; set; }
     public string FileName { get; set; } = null!;
     public string ContentType { get; set; } = null!;
     public long SizeBytes { get; set; }

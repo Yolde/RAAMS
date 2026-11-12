@@ -12,6 +12,11 @@ public class CreateAssessmentValidator : AbstractValidator<CreateAssessmentDto>
         RuleFor(x => x.Quarter).NotEmpty().Must(value => value is "Q1" or "Q2" or "Q3" or "Q4")
             .WithMessage("Quarter must be Q1, Q2, Q3, or Q4.");
         RuleFor(x => x.Year).InclusiveBetween(2000, 2100);
+        RuleFor(x => x.LineOfDefence).NotEmpty().Must(value => value is "LOD1" or "LOD2" or "LOD3")
+            .WithMessage("LineOfDefence must be LOD1, LOD2, or LOD3.");
+        RuleFor(x => x.Opinion).Must(value => value is "Satisfactory" or "NeedsImprovement" or
+            "Unsatisfactory" or "Unacceptable" or "NotRated")
+            .When(x => x.Opinion is not null).WithMessage("Opinion is not valid.");
         RuleFor(x => x.LeadAuditorId).NotEmpty();
         RuleFor(x => x.CoordinatorId).NotEmpty();
     }

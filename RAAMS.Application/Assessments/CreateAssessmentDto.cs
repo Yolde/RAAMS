@@ -7,6 +7,8 @@ public class CreateAssessmentDto
     public string Function { get; set; } = null!;
     public string Quarter { get; set; } = null!;
     public int Year { get; set; }
+    public string LineOfDefence { get; set; } = null!;
+    public string? Opinion { get; set; }
     public Guid LeadAuditorId { get; set; }
     public Guid CoordinatorId { get; set; }
     public string? ReferenceNumber { get; set; }

@@ -38,7 +38,8 @@ public class EvidenceController(IEvidenceService evidence, ILogger<EvidenceContr
             var item = await evidence.CreateAsync(dto, ct);
             return CreatedAtAction(nameof(GetById), new { id = item.Id }, item);
         }
-        catch (ArgumentException ex) when (ex.Message == "Action not found")
+        catch (ArgumentException ex) when (ex.Message is "Action not found" or "Assessment not found" or
+                                            "Evidence must reference either an Action or an Assessment")
         {
             logger.LogInformation("Evidence creation failed: {Message}", ex.Message);
             return BadRequest(new { error = ex.Message });

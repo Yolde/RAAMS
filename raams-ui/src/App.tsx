@@ -11,6 +11,16 @@ import { ActionsPage } from './pages/ActionsPage'
 import { DashboardPage } from './pages/DashboardPage'
 
 const queryClient = new QueryClient()
+const customTheme = {
+  ...webLightTheme,
+  colorBrandBackground: '#02B702',
+  colorBrandBackgroundHover: '#029602',
+  colorBrandForeground1: '#02B702',
+  colorBrandForeground2: '#F76B38',
+  colorPaletteBrandForeground1: '#02B702',
+  colorNeutralBackground1: '#FFFFFF',
+  colorNeutralBackground2: '#F5F5F5',
+}
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth()
@@ -25,7 +35,7 @@ function Home() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <FluentProvider theme={webLightTheme}>
+      <FluentProvider theme={customTheme}>
         <AuthProvider>
           <BrowserRouter>
             <RoleProvider>

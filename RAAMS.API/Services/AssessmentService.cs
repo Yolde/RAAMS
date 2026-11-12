@@ -31,6 +31,8 @@ public class AssessmentService(
         Function = assessment.Function,
         Quarter = assessment.Quarter,
         Year = assessment.Year,
+        LineOfDefence = assessment.LineOfDefence.ToString(),
+        Opinion = assessment.Opinion.ToString(),
         LeadAuditorId = assessment.LeadAuditorId,
         LeadAuditorName = assessment.LeadAuditor.DisplayName,
         CoordinatorId = assessment.CoordinatorId,
@@ -119,6 +121,8 @@ public class AssessmentService(
             Function = dto.Function,
             Quarter = dto.Quarter,
             Year = dto.Year,
+            LineOfDefence = Enum.Parse<LineOfDefence>(dto.LineOfDefence),
+            Opinion = dto.Opinion is null ? AssessmentOpinion.NotRated : Enum.Parse<AssessmentOpinion>(dto.Opinion),
             LeadAuditorId = dto.LeadAuditorId,
             CoordinatorId = dto.CoordinatorId,
             Status = AssessmentStatus.Planned,
@@ -149,6 +153,9 @@ public class AssessmentService(
         entity.Function = dto.Function;
         entity.Quarter = dto.Quarter;
         entity.Year = dto.Year;
+        entity.LineOfDefence = Enum.Parse<LineOfDefence>(dto.LineOfDefence);
+        if (dto.Opinion is not null)
+            entity.Opinion = Enum.Parse<AssessmentOpinion>(dto.Opinion);
         entity.LeadAuditorId = dto.LeadAuditorId;
         entity.CoordinatorId = dto.CoordinatorId;
         auditContext.SetReason($"Assessment updated: {dto.Name}");

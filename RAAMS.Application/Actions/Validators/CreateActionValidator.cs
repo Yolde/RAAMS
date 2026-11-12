@@ -8,6 +8,7 @@ public class CreateActionValidator : AbstractValidator<CreateActionDto>
     {
         RuleFor(x => x.FindingId).NotEmpty();
         RuleFor(x => x.ReferenceNumber).NotEmpty().MaximumLength(50);
+        RuleFor(x => x.Reportable).NotEmpty().Must(value => value is "CEO" or "NonCEO");
         RuleFor(x => x.ActionDescription).NotEmpty().MaximumLength(2000);
         RuleFor(x => x.ActionRequired).NotEmpty().MaximumLength(2000);
         RuleFor(x => x.ActionPartyId).NotEmpty().NotEqual(x => x.AuditeeId);

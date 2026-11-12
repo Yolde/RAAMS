@@ -86,6 +86,43 @@ public class EvidenceServiceTests
         Assert.Empty(await f.Db.Evidence.ToListAsync());
     }
 
+    [Fact]
+    public async Task AssessmentParentRequiresGraAndNullParentsAreRejected()
+    {
+        await using var f = new Fixture();
+        await f.SeedAsync();
+        var dto = f.Create();
+        dto.ActionId = null;
+        var error = await Assert.ThrowsAsync<ArgumentException>(() => f.Service.CreateAsync(dto));
+        Assert.Equal("Evidence must reference either an Action or an Assessment", error.Message);
+        dto.AssessmentId = f.Action.Finding.Assessment.Id;
+        await Assert.ThrowsAsync<ForbiddenException>(() => f.Service.CreateAsync(dto));
+        dto.ActionId = f.Action.Id;
+        await Assert.ThrowsAsync<ForbiddenException>(() => f.Service.CreateAsync(dto));
+        f.Db.Evidence.Add(new EvidenceItem
+        {
+            Id = Guid.NewGuid(), AssessmentId = dto.AssessmentId, UploadedById = f.User.Id,
+            FileName = "assessment", ContentType = "text/plain", SizeBytes = 1, Version = 1, UploadedAt = DateTime.UtcNow
+        });
+        await f.Db.SaveChangesAsync();
+        var result = Assert.Single((await f.Service.ListAsync(null, 1, 20)).Items);
+        Assert.Null(result.ActionId);
+        Assert.Equal(dto.AssessmentId, result.AssessmentId);
+    }
+
+    [Fact]
+    public async Task ModelUsesCorrectDefaultSentinelsAndOptionalEvidenceParents()
+    {
+        await using var f = new Fixture();
+        var action = f.Db.Model.FindEntityType(typeof(ActionEntity))!;
+        var assessment = f.Db.Model.FindEntityType(typeof(Assessment))!;
+        var evidence = f.Db.Model.FindEntityType(typeof(EvidenceItem))!;
+        Assert.Equal(Reportable.NonCEO, action.FindProperty(nameof(ActionEntity.Reportable))!.Sentinel);
+        Assert.Equal(AssessmentOpinion.NotRated, assessment.FindProperty(nameof(Assessment.Opinion))!.Sentinel);
+        Assert.True(evidence.FindProperty(nameof(EvidenceItem.ActionId))!.IsNullable);
+        Assert.True(evidence.FindProperty(nameof(EvidenceItem.AssessmentId))!.IsNullable);
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         public User User { get; } = MakeUser("Uploader");

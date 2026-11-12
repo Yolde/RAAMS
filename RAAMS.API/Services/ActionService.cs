@@ -28,6 +28,7 @@ public class ActionService(
         FindingId = action.FindingId,
         FindingReference = action.Finding.ReferenceNumber,
         ReferenceNumber = action.ReferenceNumber,
+        Reportable = action.Reportable.ToString(),
         ActionDescription = action.ActionDescription,
         ActionRequired = action.ActionRequired,
         ActionPartyId = action.ActionPartyId,
@@ -141,6 +142,7 @@ public class ActionService(
             Id = Guid.NewGuid(), FindingId = dto.FindingId, ReferenceNumber = dto.ReferenceNumber,
             ActionDescription = dto.ActionDescription, ActionRequired = dto.ActionRequired,
             ActionPartyId = dto.ActionPartyId, AuditeeId = dto.AuditeeId, TargetDate = dto.TargetDate,
+            Reportable = Enum.Parse<Reportable>(dto.Reportable),
             Status = ActionStatus.Open
         };
         db.Actions.Add(action);
@@ -177,6 +179,8 @@ public class ActionService(
         action.ActionPartyId = actionPartyId;
         action.AuditeeId = auditeeId;
         action.TargetDate = dto.TargetDate ?? action.TargetDate;
+        if (dto.Reportable is not null)
+            action.Reportable = Enum.Parse<Reportable>(dto.Reportable);
         auditContext.SetReason($"Action updated: {action.ReferenceNumber}");
         await db.SaveChangesAsync(ct);
         logger.LogInformation("Updated action {ActionId}", id);

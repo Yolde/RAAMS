@@ -9,13 +9,16 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarEle
 
 const assessmentStatuses = ['Planned', 'Started', 'DraftReport', 'Completed', 'Deferred', 'Cancelled']
 const actionStatuses = ['Open', 'Submitted', 'Approved', 'Closed', 'Reopened']
-const assessmentColors = ['#0078d4', '#8764b8', '#ffb900', '#107c10', '#8a8886', '#d13438']
-const actionColors = ['#0078d4', '#8764b8', '#ffb900', '#107c10', '#d13438']
+const assessmentColors = ['#02B702', '#F76B38', '#FFD400', '#68D968', '#D6D6D6', '#A8A8A8']
+const actionColor = '#02B702'
 
 const useStyles = makeStyles({
   page: { display: 'flex', flexDirection: 'column', gap: '24px' },
   tiles: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '16px' },
   tile: { padding: '20px', gap: '8px' },
+  greenTile: { borderTop: '3px solid #02B702' },
+  orangeTile: { borderTop: '3px solid #F76B38' },
+  yellowTile: { borderTop: '3px solid #FFD400' },
   charts: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '16px' },
   chartCard: { padding: '20px', gap: '16px', minWidth: 0 },
   chart: { position: 'relative', height: '300px', width: '100%' },
@@ -53,20 +56,20 @@ export function DashboardPage() {
         <MessageBar intent="error"><MessageBarBody>Actions: {getErrorMessage(actions.error)}</MessageBarBody></MessageBar>
       )}
       <div className={styles.tiles}>
-        <Card className={styles.tile}>
+        <Card className={`${styles.tile} ${styles.greenTile}`}>
           <Text>Total Assessments</Text>
           <Text size={700} weight="semibold">{assessments.data?.totalCount ?? '—'}</Text>
         </Card>
-        <Card className={styles.tile}>
+        <Card className={`${styles.tile} ${styles.orangeTile}`}>
           <Text>Total Actions</Text>
           <Text size={700} weight="semibold">{actions.data?.totalCount ?? '—'}</Text>
         </Card>
-        <Card className={styles.tile}>
+        <Card className={`${styles.tile} ${styles.yellowTile}`}>
           <Text>Overdue Actions</Text>
           <Text size={700} weight="semibold">{overdue ?? '—'}</Text>
           <Text size={200} className={styles.caption}>First page only</Text>
         </Card>
-        <Card className={styles.tile}>
+        <Card className={`${styles.tile} ${styles.greenTile}`}>
           <Text>Open Actions</Text>
           <Text size={700} weight="semibold">{open ?? '—'}</Text>
           <Text size={200} className={styles.caption}>First page only</Text>
@@ -95,7 +98,7 @@ export function DashboardPage() {
           {actionItems && (actionCounts.some((count) => count > 0) ? (
             <div className={styles.chart}>
               <Bar
-                data={{ labels: actionStatuses, datasets: [{ label: 'Actions', data: actionCounts, backgroundColor: actionColors }] }}
+                data={{ labels: actionStatuses, datasets: [{ label: 'Actions', data: actionCounts, backgroundColor: actionColor }] }}
                 options={{ responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }}
                 aria-label="Actions by status on the first page"
                 role="img"

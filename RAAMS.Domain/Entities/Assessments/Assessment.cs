@@ -14,6 +14,8 @@ public class Assessment : IEntity, ICreatedEntity, IModifiedEntity, ISoftDelete,
     public string Function { get; set; } = null!;
     public string Quarter { get; set; } = null!;
     public int Year { get; set; }
+    public LineOfDefence LineOfDefence { get; set; }
+    public AssessmentOpinion Opinion { get; set; } = AssessmentOpinion.NotRated;
     public Guid LeadAuditorId { get; set; }
     public Guid CoordinatorId { get; set; }
     public AssessmentStatus Status { get; set; }
