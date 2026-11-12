@@ -485,3 +485,7 @@ $RECYCLE.BIN/
 RAAMS.API/token.txt
 RAAMS.API/test_user_guid.txt
 RAAMS.API/token
+
+# Test artifacts (contain live tokens or request bodies)
+RAAMS.API/ap_token.txt
+body.json
