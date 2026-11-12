@@ -6,6 +6,8 @@ import { AuthProvider, useAuth } from './auth/AuthProvider'
 import { Layout } from './components/Layout'
 import { RoleProvider } from './context/RoleContext'
 import { LoginPage } from './pages/LoginPage'
+import { AssessmentsPage } from './pages/AssessmentsPage'
+import { ActionsPage } from './pages/ActionsPage'
 
 const queryClient = new QueryClient()
 
@@ -30,8 +32,8 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/dashboard" element={<ProtectedRoute><div>Dashboard coming soon</div></ProtectedRoute>} />
-                <Route path="/assessments" element={<ProtectedRoute><div>Assessments coming in 8.3</div></ProtectedRoute>} />
-                <Route path="/actions" element={<ProtectedRoute><div>Actions coming in 8.4</div></ProtectedRoute>} />
+                <Route path="/assessments" element={<ProtectedRoute><AssessmentsPage /></ProtectedRoute>} />
+                <Route path="/actions" element={<ProtectedRoute><ActionsPage /></ProtectedRoute>} />
                 <Route path="/reviews" element={<ProtectedRoute><div>Reviews coming soon</div></ProtectedRoute>} />
                 <Route path="/evidence" element={<ProtectedRoute><div>Evidence coming soon</div></ProtectedRoute>} />
                 <Route path="*" element={<Home />} />

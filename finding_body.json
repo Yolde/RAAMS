@@ -1,0 +1,1 @@
+﻿{"referenceNumber":"FIND-001","description":"Lack of segregation of duties in the accounts payable process.","severity":"High","rootCause":"Legacy system limitations.","assessmentId":"5FC6854F-393E-4E7F-959E-11CCFFB3153A","recommendation":"Implement dual approval in the ERP."}

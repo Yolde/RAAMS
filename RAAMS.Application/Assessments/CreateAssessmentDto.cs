@@ -9,5 +9,5 @@ public class CreateAssessmentDto
     public int Year { get; set; }
     public Guid LeadAuditorId { get; set; }
     public Guid CoordinatorId { get; set; }
-    public string ReferenceNumber { get; set; } = null!;
+    public string? ReferenceNumber { get; set; }
 }

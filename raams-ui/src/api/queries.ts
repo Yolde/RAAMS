@@ -71,7 +71,7 @@ export function useAction(id: string) {
 }
 
 function useActionTransition<T extends { id: string }>(
-  operation: 'submit' | 'approve' | 'reopen',
+  operation: 'submit' | 'approve' | 'reject' | 'reopen',
   body: (value: T) => object,
 ) {
   const queryClient = useQueryClient()
@@ -94,6 +94,10 @@ export function useSubmitAction() {
 
 export function useApproveAction() {
   return useActionTransition<CommentAction>('approve', ({ comments }) => ({ comments }))
+}
+
+export function useRejectAction() {
+  return useActionTransition<CommentAction>('reject', ({ comments }) => ({ comments }))
 }
 
 export function useReopenAction() {

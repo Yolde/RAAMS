@@ -22,10 +22,15 @@ public class BusinessDtoValidatorTests
         var dto = new CreateAssessmentDto
         {
             Name = "Assessment", Scope = "Scope", Function = "F", Quarter = "Q1", Year = 2000,
-            LeadAuditorId = Guid.NewGuid(), CoordinatorId = Guid.NewGuid(), ReferenceNumber = "A1"
+            LeadAuditorId = Guid.NewGuid(), CoordinatorId = Guid.NewGuid()
         };
         var validator = new CreateAssessmentValidator();
         Assert.True(validator.Validate(dto).IsValid);
+        Assert.False(new UpdateAssessmentValidator().Validate(new UpdateAssessmentDto
+        {
+            Name = dto.Name, Scope = dto.Scope, Function = dto.Function, Quarter = dto.Quarter, Year = dto.Year,
+            LeadAuditorId = dto.LeadAuditorId, CoordinatorId = dto.CoordinatorId
+        }).IsValid);
         dto.Year = 2101;
         dto.Quarter = "Q5";
         Assert.False(validator.Validate(dto).IsValid);

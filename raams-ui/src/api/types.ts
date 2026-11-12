@@ -52,7 +52,6 @@ export interface Assessment {
 }
 
 export interface CreateAssessment {
-  referenceNumber: string
   name: string
   scope: string
   function: string

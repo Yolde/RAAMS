@@ -58,7 +58,7 @@ public class AssessmentServiceTests
         var dto = new CreateAssessmentDto
         {
             Name = "First", Scope = "Scope", Function = "Finance", Quarter = "Q2", Year = 2026,
-            LeadAuditorId = userId, CoordinatorId = userId, ReferenceNumber = "ignored"
+            LeadAuditorId = userId, CoordinatorId = userId
         };
         var created = await service.CreateAsync(dto);
         Assert.Equal("RA-2026-Q2-0001", created.ReferenceNumber);

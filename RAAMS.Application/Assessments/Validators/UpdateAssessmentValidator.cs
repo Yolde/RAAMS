@@ -7,5 +7,6 @@ public class UpdateAssessmentValidator : AbstractValidator<UpdateAssessmentDto>
     public UpdateAssessmentValidator()
     {
         Include(new CreateAssessmentValidator());
+        RuleFor(x => x.ReferenceNumber).NotEmpty().MaximumLength(50);
     }
 }

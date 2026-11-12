@@ -14,6 +14,5 @@ public class CreateAssessmentValidator : AbstractValidator<CreateAssessmentDto>
         RuleFor(x => x.Year).InclusiveBetween(2000, 2100);
         RuleFor(x => x.LeadAuditorId).NotEmpty();
         RuleFor(x => x.CoordinatorId).NotEmpty();
-        RuleFor(x => x.ReferenceNumber).NotEmpty().MaximumLength(50);
     }
 }
