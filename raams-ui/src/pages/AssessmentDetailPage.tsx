@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { CreateFindingModal } from './CreateFindingModal';
-import { AddActionModal } from './AddActionModal';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { 
@@ -21,18 +19,31 @@ import {
 } from '@fluentui/react-components';
 import { ArrowLeft24Regular } from '@fluentui/react-icons';
 import { client } from '../api/client';
+import { CreateFindingModal } from './CreateFindingModal';
+import { AddActionModal } from './AddActionModal';
+import { UploadEvidenceModal } from './UploadEvidenceModal';
 
 export function AssessmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [findingModalOpen, setFindingModalOpen] = useState(false);
   const [actionFindingId, setActionFindingId] = useState<string | null>(null);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   const { data: assessment, isLoading, isError } = useQuery({
     queryKey: ['assessment', id],
     queryFn: async () => {
       const response = await client.get(`/api/assessments/${id}`);
       return response.data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: evidenceList = [] } = useQuery({
+    queryKey: ['evidence', id],
+    queryFn: async () => {
+      const res = await client.get(`/api/assessments/${id}/escalation-emails`);
+      return res.data;
     },
     enabled: !!id,
   });
@@ -49,9 +60,7 @@ export function AssessmentDetailPage() {
       </div>
 
       <Card>
-        <CardHeader 
-          header={<Title3>Overview</Title3>} 
-        />
+        <CardHeader header={<Title3>Overview</Title3>} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', padding: '16px' }}>
           <div>
             <Text weight="semibold" block>Reference Number</Text>
@@ -126,6 +135,42 @@ export function AssessmentDetailPage() {
         </Table>
       </Card>
 
+      <Card>
+        <CardHeader 
+          header={<Title3>Escalation Evidence</Title3>} 
+          action={<Button appearance="primary" onClick={() => setUploadModalOpen(true)}>Upload File</Button>}
+        />
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHeaderCell>File Name</TableHeaderCell>
+              <TableHeaderCell>Type</TableHeaderCell>
+              <TableHeaderCell>Size</TableHeaderCell>
+              <TableHeaderCell>Uploaded By</TableHeaderCell>
+              <TableHeaderCell>Date</TableHeaderCell>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {evidenceList.map((file: any) => (
+              <TableRow key={file.id}>
+                <TableCell>{file.fileName}</TableCell>
+                <TableCell>{file.contentType}</TableCell>
+                <TableCell>{(file.sizeBytes / 1024).toFixed(1)} KB</TableCell>
+                <TableCell>{file.uploadedByName}</TableCell>
+                <TableCell>{new Date(file.uploadedAt).toLocaleDateString()}</TableCell>
+              </TableRow>
+            ))}
+            {evidenceList.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} style={{ textAlign: 'center', padding: '20px' }}>
+                  <Text italic>No escalation evidence uploaded yet.</Text>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
+
       <AddActionModal
         assessmentId={id!}
         findingId={actionFindingId}
@@ -137,6 +182,12 @@ export function AssessmentDetailPage() {
         assessmentId={id!} 
         open={findingModalOpen} 
         onClose={() => setFindingModalOpen(false)} 
+      />
+
+      <UploadEvidenceModal 
+        assessmentId={id!} 
+        open={uploadModalOpen} 
+        onClose={() => setUploadModalOpen(false)} 
       />
     </div>
   );

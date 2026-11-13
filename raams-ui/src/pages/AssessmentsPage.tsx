@@ -89,7 +89,10 @@ export function AssessmentsPage() {
                   <DataGridRow<Assessment> 
                     key={rowId} 
                     className={styles.clickableRow} 
-                    onClick={() => navigate(`/assessments/${item.id}`)} // <-- CLICK EVENT
+                    onClick={() => {
+  console.log("CLICKED ASSESSMENT:", item);
+  navigate(`/assessments/${item.id}`)
+}}  // <-- CLICK EVENT
                   >
                     {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
                   </DataGridRow>

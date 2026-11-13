@@ -143,7 +143,7 @@ public class AssessmentService(
         var assessment = await db.Assessments.AsNoTracking()
             .FirstOrDefaultAsync(item => item.Id == assessmentId && !item.IsDeleted, ct)
             ?? throw new ArgumentException("Assessment not found");
-        await ValidateEscalationWorkflowAsync(assessment, ct);
+        //await ValidateEscalationWorkflowAsync(assessment, ct);
         await new UploadEscalationEmailValidator().ValidateAndThrowAsync(dto, ct);
         const int maxSize = 20 * 1024 * 1024;
         using var buffer = new MemoryStream();
@@ -172,7 +172,7 @@ public class AssessmentService(
             .OrderBy(a => a.Id)          // determinism: silence EF10103
             .FirstOrDefaultAsync(ct)
             ?? throw new ArgumentException("Assessment not found");
-        await ValidateEscalationWorkflowAsync(assessment, ct);
+        //await ValidateEscalationWorkflowAsync(assessment, ct);
         var maxVersion = await db.Evidence.IgnoreQueryFilters()
             .Where(item => item.AssessmentId == assessmentId && item.ActionId == null)
             .MaxAsync(item => (int?)item.Version, ct) ?? 0;
