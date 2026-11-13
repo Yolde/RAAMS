@@ -8,4 +8,5 @@ public interface IEvidenceService
     Task<EvidenceDto?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<EvidenceDto> CreateAsync(CreateEvidenceDto dto, CancellationToken ct = default);
     Task DeleteAsync(Guid id, CancellationToken ct = default);
+    Task<EvidenceFile?> GetFileContentAsync(Guid id, CancellationToken ct = default);
 }

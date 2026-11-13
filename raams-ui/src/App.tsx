@@ -1,3 +1,4 @@
+import { EvidencePage } from './pages/EvidencePage'
 import { FluentProvider, webLightTheme } from '@fluentui/react-components'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
@@ -51,7 +52,7 @@ function App() {
                 
                 <Route path="/actions" element={<ProtectedRoute><ActionsPage /></ProtectedRoute>} />
                 <Route path="/reviews" element={<ProtectedRoute><div>Reviews coming soon</div></ProtectedRoute>} />
-                <Route path="/evidence" element={<ProtectedRoute><div>Evidence coming soon</div></ProtectedRoute>} />
+                <Route path="/evidence" element={<ProtectedRoute><EvidencePage /></ProtectedRoute>} />
                 <Route path="*" element={<Home />} />
               </Routes>
             </RoleProvider>

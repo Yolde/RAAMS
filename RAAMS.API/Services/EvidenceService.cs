@@ -66,6 +66,20 @@ public class EvidenceService(
     public Task<EvidenceDto?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         Evidence().Where(item => item.Id == id).Select(Projection).SingleOrDefaultAsync(ct);
 
+    // ── NEW METHOD FOR FILE DOWNLOAD ──
+    public async Task<EvidenceFile?> GetFileContentAsync(Guid id, CancellationToken ct = default)
+    {
+        var result = await (
+            from e in db.Evidence.AsNoTracking()
+            join c in db.EvidenceContents.AsNoTracking() on e.Id equals c.EvidenceId
+            where e.Id == id && !e.IsDeleted
+            select new EvidenceFile(e.FileName, e.ContentType, c.Data)
+        ).SingleOrDefaultAsync(ct);
+
+        return result;
+    }
+    // ──────────────────────────────────
+
     public async Task<EvidenceDto> CreateAsync(CreateEvidenceDto dto, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(dto);

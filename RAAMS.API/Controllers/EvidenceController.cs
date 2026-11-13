@@ -29,6 +29,18 @@ public class EvidenceController(IEvidenceService evidence, ILogger<EvidenceContr
         return item is null ? NotFound() : Ok(item);
     }
 
+    [HttpGet("{id:guid}/download")]
+    public async Task<IActionResult> Download(Guid id, CancellationToken ct)
+    {
+        var dto = await evidence.GetByIdAsync(id, ct);
+        if (dto is null) return NotFound();
+
+        var file = await evidence.GetFileContentAsync(id, ct);
+        if (file is null) return NotFound();
+
+        return File(file.Data, dto.ContentType, dto.FileName);
+    }
+
     [HttpPost]
     [ProducesResponseType(typeof(EvidenceDto), StatusCodes.Status201Created)]
     public async Task<ActionResult<EvidenceDto>> Create([FromBody] CreateEvidenceDto dto, CancellationToken ct)
