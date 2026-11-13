@@ -2,7 +2,7 @@ import axios from 'axios'
 import { clearToken, getToken } from '../auth/tokenStorage'
 
 export const client = axios.create({
-  baseURL: 'https://localhost:7014',
+  baseURL: 'http://localhost:5008',
   withCredentials: false,
 })
 

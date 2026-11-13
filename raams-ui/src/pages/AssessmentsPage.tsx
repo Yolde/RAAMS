@@ -5,6 +5,7 @@ import {
 } from '@fluentui/react-components'
 import type { TableColumnDefinition } from '@fluentui/react-components'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom' // <-- NEW IMPORT
 import { getErrorMessage } from '../api/errors'
 import { useAssessments } from '../api/queries'
 import type { Assessment } from '../api/types'
@@ -18,6 +19,7 @@ const useStyles = makeStyles({
   table: { overflowX: 'auto' },
   grid: { minWidth: '800px' },
   pagination: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
+  clickableRow: { cursor: 'pointer', ':hover': { backgroundColor: '#f5f5f5' } }, // <-- NEW STYLE
 })
 
 function StatusBadge({ status }: { status: string }) {
@@ -47,12 +49,14 @@ const columns: TableColumnDefinition<Assessment>[] = [
 
 export function AssessmentsPage() {
   const styles = useStyles()
+  const navigate = useNavigate() // <-- NEW NAVIGATE HOOK
   const { hasPermission, hasRole } = usePermissions()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
   const query = useAssessments({ page, pageSize: 20 })
+  
   const items = useMemo(() => {
     const term = search.trim().toLocaleLowerCase()
     return (query.data?.items ?? []).filter((item) =>
@@ -82,7 +86,11 @@ export function AssessmentsPage() {
               </DataGridHeader>
               <DataGridBody<Assessment>>
                 {({ item, rowId }) => (
-                  <DataGridRow<Assessment> key={rowId}>
+                  <DataGridRow<Assessment> 
+                    key={rowId} 
+                    className={styles.clickableRow} 
+                    onClick={() => navigate(`/assessments/${item.id}`)} // <-- CLICK EVENT
+                  >
                     {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
                   </DataGridRow>
                 )}

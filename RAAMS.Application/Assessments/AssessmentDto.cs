@@ -1,3 +1,5 @@
+using RAAMS.Application.Findings;
+
 namespace RAAMS.Application.Assessments;
 
 public class AssessmentDto
@@ -20,4 +22,7 @@ public class AssessmentDto
     public string? CancellationReason { get; set; }
     public DateTime CreatedDate { get; set; }
     public DateTime ModifiedDate { get; set; }
+
+    // ADDED:
+    public List<FindingDto> Findings { get; set; } = new();
 }

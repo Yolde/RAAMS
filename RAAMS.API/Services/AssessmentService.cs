@@ -3,12 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.Linq.Expressions;
 using System.Security.Cryptography;
+using RAAMS.Application.Actions;
 using RAAMS.Application.Assessments;
 using RAAMS.Application.Assessments.Validators;
 using RAAMS.Application.Auditing;
 using RAAMS.Application.Authorization;
 using RAAMS.Application.Common;
 using RAAMS.Application.Common.Exceptions;
+using RAAMS.Application.Findings;
 using RAAMS.Application.Services;
 using RAAMS.Domain.Entities.Assessments;
 using RAAMS.Domain.Entities.Evidence;
@@ -44,7 +46,41 @@ public class AssessmentService(
         CompletionDate = assessment.CompletionDate,
         CancellationReason = assessment.CancellationReason,
         CreatedDate = assessment.CreatedDate,
-        ModifiedDate = assessment.ModifiedDate
+        ModifiedDate = assessment.ModifiedDate,
+        
+        Findings = assessment.Findings.Select(f => new FindingDto
+        {
+            Id = f.Id,
+            AssessmentId = f.AssessmentId,
+            ReferenceNumber = f.ReferenceNumber,
+            Description = f.Description,
+            RootCause = f.RootCause,
+            Recommendation = f.Recommendation,
+            Severity = f.Severity.ToString(),
+            Status = f.Status.ToString(),
+            CreatedDate = f.CreatedDate,
+            Actions = f.Actions.Select(a => new ActionDto
+            {
+                Id = a.Id,
+                FindingId = a.FindingId,
+                FindingReference = f.ReferenceNumber,
+                ReferenceNumber = a.ReferenceNumber,
+                Reportable = a.Reportable.ToString(),
+                ActionDescription = a.ActionDescription,
+                ActionRequired = a.ActionRequired,
+                ActionPartyId = a.ActionPartyId,
+                ActionPartyName = a.ActionParty.DisplayName,
+                AuditeeId = a.AuditeeId,
+                AuditeeName = a.Auditee.DisplayName,
+                TargetDate = a.TargetDate,
+                ActionTaken = a.ActionTaken,
+                Status = a.Status.ToString(),
+                SubmittedDate = a.SubmittedDate,
+                ApprovedDate = a.ApprovedDate,
+                ClosedDate = a.ClosedDate,
+                CreatedDate = a.CreatedDate
+            }).ToList()
+        }).ToList()
     };
 
     private static readonly Expression<Func<EvidenceItem, EscalationEmailDto>> EscalationProjection = item => new()
@@ -130,12 +166,12 @@ public class AssessmentService(
 
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         // Share the assessment lock and version sequence with assessment-only evidence uploads.
-assessment = await db.Assessments.FromSqlInterpolated(
-        $"SELECT * FROM dbo.Assessments WITH (UPDLOCK, HOLDLOCK) WHERE Id = {assessmentId} AND IsDeleted = 0")
-    .IgnoreQueryFilters().AsNoTracking()
-    .OrderBy(a => a.Id)          // determinism: silence EF10103
-    .FirstOrDefaultAsync(ct)
-    ?? throw new ArgumentException("Assessment not found");
+        assessment = await db.Assessments.FromSqlInterpolated(
+                $"SELECT * FROM dbo.Assessments WITH (UPDLOCK, HOLDLOCK) WHERE Id = {assessmentId} AND IsDeleted = 0")
+            .IgnoreQueryFilters().AsNoTracking()
+            .OrderBy(a => a.Id)          // determinism: silence EF10103
+            .FirstOrDefaultAsync(ct)
+            ?? throw new ArgumentException("Assessment not found");
         await ValidateEscalationWorkflowAsync(assessment, ct);
         var maxVersion = await db.Evidence.IgnoreQueryFilters()
             .Where(item => item.AssessmentId == assessmentId && item.ActionId == null)
@@ -310,5 +346,4 @@ assessment = await db.Assessments.FromSqlInterpolated(
         return await GetByIdAsync(id, ct)
                ?? throw new InvalidOperationException("The changed assessment is not visible to its editor.");
     }
-
 }

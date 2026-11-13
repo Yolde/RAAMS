@@ -1,3 +1,5 @@
+using RAAMS.Application.Actions;
+
 namespace RAAMS.Application.Findings;
 
 public class FindingDto
@@ -12,4 +14,5 @@ public class FindingDto
     public string Severity { get; set; } = null!;
     public string Status { get; set; } = null!;
     public DateTime CreatedDate { get; set; }
+    public List<ActionDto> Actions { get; set; } = new();
 }

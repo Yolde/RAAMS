@@ -514,3 +514,41 @@ raams-ui/.env.*.local
 # Temp test output
 test-output.txt
 
+# ── Additions for RAAMS ──
+
+# Local SQLite databases (from EF Core integration tests)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# ASP.NET Core local overrides
+appsettings.Local.json
+appsettings.*.local.json
+
+# Vite env overrides (keep the base .env ignored, ignore local variants)
+raams-ui/.env.local
+raams-ui/.env.*.local
+
+# Temp test output
+test-output.txt
+
+
+# ── Additions for RAAMS ──
+
+# Local SQLite databases (from EF Core integration tests)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# ASP.NET Core local overrides
+appsettings.Local.json
+appsettings.*.local.json
+
+# Vite env overrides (keep the base .env ignored, ignore local variants)
+raams-ui/.env.local
+raams-ui/.env.*.local
+
+# Temp test output
+test-output.txt
