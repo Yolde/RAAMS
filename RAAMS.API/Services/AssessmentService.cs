@@ -143,7 +143,7 @@ public class AssessmentService(
         var assessment = await db.Assessments.AsNoTracking()
             .FirstOrDefaultAsync(item => item.Id == assessmentId && !item.IsDeleted, ct)
             ?? throw new ArgumentException("Assessment not found");
-        //await ValidateEscalationWorkflowAsync(assessment, ct);
+        await ValidateEscalationWorkflowAsync(assessment, ct);
         await new UploadEscalationEmailValidator().ValidateAndThrowAsync(dto, ct);
         const int maxSize = 20 * 1024 * 1024;
         using var buffer = new MemoryStream();
@@ -164,15 +164,23 @@ public class AssessmentService(
         if (reason.Length > 500)
             throw new ValidationException("The audit reason including notes must not exceed 500 characters.");
 
-        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        await using var transaction = db.Database.IsRelational()
+            ? await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct)
+            : null;
+
         // Share the assessment lock and version sequence with assessment-only evidence uploads.
-        assessment = await db.Assessments.FromSqlInterpolated(
-                $"SELECT * FROM dbo.Assessments WITH (UPDLOCK, HOLDLOCK) WHERE Id = {assessmentId} AND IsDeleted = 0")
-            .IgnoreQueryFilters().AsNoTracking()
-            .OrderBy(a => a.Id)          // determinism: silence EF10103
-            .FirstOrDefaultAsync(ct)
+        assessment = db.Database.IsSqlServer()
+            ? await db.Assessments.FromSqlInterpolated(
+                    $"SELECT * FROM dbo.Assessments WITH (UPDLOCK, HOLDLOCK) WHERE Id = {assessmentId} AND IsDeleted = 0")
+                .IgnoreQueryFilters().AsNoTracking()
+                .OrderBy(a => a.Id)
+                .FirstOrDefaultAsync(ct)
+            : await db.Assessments.IgnoreQueryFilters().AsNoTracking()
+                .Where(a => a.Id == assessmentId && !a.IsDeleted)
+                .FirstOrDefaultAsync(ct)
             ?? throw new ArgumentException("Assessment not found");
-        //await ValidateEscalationWorkflowAsync(assessment, ct);
+
+        await ValidateEscalationWorkflowAsync(assessment, ct);
         var maxVersion = await db.Evidence.IgnoreQueryFilters()
             .Where(item => item.AssessmentId == assessmentId && item.ActionId == null)
             .MaxAsync(item => (int?)item.Version, ct) ?? 0;
@@ -189,7 +197,9 @@ public class AssessmentService(
         await db.SaveChangesAsync(ct);
         var result = await EscalationEmails(assessmentId).Where(email => email.Id == item.Id)
             .Select(EscalationProjection).SingleAsync(ct);
-        await transaction.CommitAsync(ct);
+
+        if (transaction is not null)
+            await transaction.CommitAsync(ct);
         logger.LogInformation("Created escalation email {EvidenceId} for assessment {AssessmentId}", item.Id, assessmentId);
         return result;
     }
@@ -236,9 +246,29 @@ public class AssessmentService(
             query = query.Where(assessment => assessment.LeadAuditorId == leadAuditorId);
 
         var totalCount = await query.CountAsync(ct);
-        var items = await query.OrderByDescending(assessment => assessment.CreatedDate)
+
+        // SQLite doesn't support SQL APPLY — fall back to include + in-memory mapping.
+        if (!db.Database.IsSqlServer())
+        {
+            var entities = await query
+                .OrderByDescending(assessment => assessment.CreatedDate)
+                .Skip((filter.Page - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .Include(a => a.LeadAuditor)
+                .Include(a => a.Coordinator)
+                .Include(a => a.Findings).ThenInclude(f => f.Actions).ThenInclude(a => a.ActionParty)
+                .Include(a => a.Findings).ThenInclude(f => f.Actions).ThenInclude(a => a.Auditee)
+                .AsSplitQuery()
+                .ToListAsync(ct);
+            var mapped = entities.Select(MapToDto).ToList();
+            return new PaginatedResult<AssessmentDto>(mapped, totalCount, filter.Page, filter.PageSize);
+        }
+
+        var items = await query
+            .OrderByDescending(assessment => assessment.CreatedDate)
             .Skip((filter.Page - 1) * filter.PageSize)
             .Take(filter.PageSize)
+            .AsSplitQuery()
             .Select(AssessmentProjection)
             .ToListAsync(ct);
 
@@ -248,11 +278,81 @@ public class AssessmentService(
     public async Task<AssessmentDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var userId = await ResolveCurrentUserIdAsync(ct);
+
+        if (!db.Database.IsSqlServer())
+        {
+            var entity = await VisibleAssessments(userId)
+                .Where(assessment => assessment.Id == id)
+                .Include(a => a.LeadAuditor)
+                .Include(a => a.Coordinator)
+                .Include(a => a.Findings).ThenInclude(f => f.Actions).ThenInclude(a => a.ActionParty)
+                .Include(a => a.Findings).ThenInclude(f => f.Actions).ThenInclude(a => a.Auditee)
+                .AsSplitQuery()
+                .FirstOrDefaultAsync(ct);
+            return entity is null ? null : MapToDto(entity);
+        }
+
         return await VisibleAssessments(userId)
             .Where(assessment => assessment.Id == id)
+            .AsSplitQuery()
             .Select(AssessmentProjection)
             .SingleOrDefaultAsync(ct);
     }
+
+    private static AssessmentDto MapToDto(Assessment assessment) => new()
+    {
+        Id = assessment.Id,
+        ReferenceNumber = assessment.ReferenceNumber,
+        Name = assessment.Name,
+        Scope = assessment.Scope,
+        Function = assessment.Function,
+        Quarter = assessment.Quarter,
+        Year = assessment.Year,
+        LineOfDefence = assessment.LineOfDefence.ToString(),
+        Opinion = assessment.Opinion.ToString(),
+        LeadAuditorId = assessment.LeadAuditorId,
+        LeadAuditorName = assessment.LeadAuditor.DisplayName,
+        CoordinatorId = assessment.CoordinatorId,
+        CoordinatorName = assessment.Coordinator.DisplayName,
+        Status = assessment.Status.ToString(),
+        CompletionDate = assessment.CompletionDate,
+        CancellationReason = assessment.CancellationReason,
+        CreatedDate = assessment.CreatedDate,
+        ModifiedDate = assessment.ModifiedDate,
+        Findings = assessment.Findings.Select(f => new FindingDto
+        {
+            Id = f.Id,
+            AssessmentId = f.AssessmentId,
+            ReferenceNumber = f.ReferenceNumber,
+            Description = f.Description,
+            RootCause = f.RootCause,
+            Recommendation = f.Recommendation,
+            Severity = f.Severity.ToString(),
+            Status = f.Status.ToString(),
+            CreatedDate = f.CreatedDate,
+            Actions = f.Actions.Select(a => new ActionDto
+            {
+                Id = a.Id,
+                FindingId = a.FindingId,
+                FindingReference = f.ReferenceNumber,
+                ReferenceNumber = a.ReferenceNumber,
+                Reportable = a.Reportable.ToString(),
+                ActionDescription = a.ActionDescription,
+                ActionRequired = a.ActionRequired,
+                ActionPartyId = a.ActionPartyId,
+                ActionPartyName = a.ActionParty.DisplayName,
+                AuditeeId = a.AuditeeId,
+                AuditeeName = a.Auditee.DisplayName,
+                TargetDate = a.TargetDate,
+                ActionTaken = a.ActionTaken,
+                Status = a.Status.ToString(),
+                SubmittedDate = a.SubmittedDate,
+                ApprovedDate = a.ApprovedDate,
+                ClosedDate = a.ClosedDate,
+                CreatedDate = a.CreatedDate
+            }).ToList()
+        }).ToList()
+    };
 
     public async Task<AssessmentDto> CreateAsync(CreateAssessmentDto dto, CancellationToken ct = default)
     {

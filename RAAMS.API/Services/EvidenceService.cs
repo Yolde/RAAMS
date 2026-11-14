@@ -80,60 +80,74 @@ public class EvidenceService(
     }
     // ──────────────────────────────────
 
-    public async Task<EvidenceDto> CreateAsync(CreateEvidenceDto dto, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(dto);
-        if (dto.ActionId is null && dto.AssessmentId is null)
-            throw new ArgumentException("Evidence must reference either an Action or an Assessment");
-        var roles = currentUser.Roles.ToArray();
-        var gra = HasRole(roles, "GRA");
-        if ((dto.AssessmentId.HasValue && !gra) ||
-            (!gra && !HasRole(roles, "ActionParty") && !HasRole(roles, "Auditee")))
-            throw new ForbiddenException("Only the assigned action party, assigned auditee or GRA can create evidence.");
-        await new CreateEvidenceValidator().ValidateAndThrowAsync(dto, ct);
-        var userId = await ResolveUserIdAsync(ct);
+public async Task<EvidenceDto> CreateAsync(CreateEvidenceDto dto, CancellationToken ct = default)
+{
+    ArgumentNullException.ThrowIfNull(dto);
+    if (dto.ActionId is null && dto.AssessmentId is null)
+        throw new ArgumentException("Evidence must reference either an Action or an Assessment");
+    var roles = currentUser.Roles.ToArray();
+    var gra = HasRole(roles, "GRA");
+    if ((dto.AssessmentId.HasValue && !gra) ||
+        (!gra && !HasRole(roles, "ActionParty") && !HasRole(roles, "Auditee")))
+        throw new ForbiddenException("Only the assigned action party, assigned auditee or GRA can create evidence.");
+    await new CreateEvidenceValidator().ValidateAndThrowAsync(dto, ct);
+    var userId = await ResolveUserIdAsync(ct);
 
-        await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        // Lock the parent until commit so uploads through this service allocate versions serially.
-        if (dto.ActionId is Guid actionId)
-        {
-            var action = await db.Actions.FromSqlInterpolated(
+    await using var transaction = db.Database.IsRelational()
+        ? await db.Database.BeginTransactionAsync(ct)
+        : null;
+        
+    // Lock the parent until commit so uploads through this service allocate versions serially.
+    if (dto.ActionId is Guid actionId)
+    {
+        var action = db.Database.IsSqlServer()
+            ? await db.Actions.FromSqlInterpolated(
                     $"SELECT * FROM dbo.Actions WITH (UPDLOCK, HOLDLOCK) WHERE Id = {actionId} AND IsDeleted = 0")
                 .IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(ct)
-                ?? throw new ArgumentException("Action not found");
-            if (!gra && !(HasRole(roles, "ActionParty") && action.ActionPartyId == userId) &&
-                !(HasRole(roles, "Auditee") && action.AuditeeId == userId))
-                throw new ForbiddenException("Only the assigned action party, assigned auditee or GRA can create evidence.");
-        }
-        if (dto.AssessmentId is Guid assessmentId)
-        {
-            var assessment = await db.Assessments.FromSqlInterpolated(
+            : await db.Actions.IgnoreQueryFilters().AsNoTracking()
+                .Where(a => a.Id == actionId && !a.IsDeleted)
+                .FirstOrDefaultAsync(ct)
+            ?? throw new ArgumentException("Action not found");
+
+        if (!gra && !(HasRole(roles, "ActionParty") && action.ActionPartyId == userId) &&
+            !(HasRole(roles, "Auditee") && action.AuditeeId == userId))
+            throw new ForbiddenException("Only the assigned action party, assigned auditee or GRA can create evidence.");
+    }
+    if (dto.AssessmentId is Guid assessmentId)
+    {
+        var assessment = db.Database.IsSqlServer()
+            ? await db.Assessments.FromSqlInterpolated(
                     $"SELECT * FROM dbo.Assessments WITH (UPDLOCK, HOLDLOCK) WHERE Id = {assessmentId} AND IsDeleted = 0")
                 .IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(ct)
-                ?? throw new ArgumentException("Assessment not found");
-        }
-        var versions = db.Evidence.IgnoreQueryFilters();
-        versions = dto.ActionId is Guid parentActionId
-            ? versions.Where(item => item.ActionId == parentActionId)
-            : versions.Where(item => item.ActionId == null && item.AssessmentId == dto.AssessmentId);
-        var maxVersion = await versions.MaxAsync(item => (int?)item.Version, ct) ?? 0;
-        var version = checked(maxVersion + 1);
-        var item = new EvidenceItem
-        {
-            Id = Guid.NewGuid(), ActionId = dto.ActionId, AssessmentId = dto.AssessmentId,
-            FileName = dto.FileName, ContentType = dto.ContentType,
-            SizeBytes = dto.SizeBytes, Version = version, UploadedById = userId, UploadedAt = DateTime.UtcNow
-        };
-        db.Evidence.Add(item);
-        auditContext.SetReason($"Evidence uploaded: {item.FileName} (v{version})");
-        await db.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
-        logger.LogInformation("Created evidence {EvidenceId} for action {ActionId} and assessment {AssessmentId}",
-            item.Id, dto.ActionId, dto.AssessmentId);
-        return await GetByIdAsync(item.Id, ct)
-            ?? throw new InvalidOperationException("The saved evidence could not be retrieved.");
+            : await db.Assessments.IgnoreQueryFilters().AsNoTracking()
+                .Where(a => a.Id == assessmentId && !a.IsDeleted)
+                .FirstOrDefaultAsync(ct)
+            ?? throw new ArgumentException("Assessment not found");
     }
-
+    var versions = db.Evidence.IgnoreQueryFilters();
+    versions = dto.ActionId is Guid parentActionId
+        ? versions.Where(item => item.ActionId == parentActionId)
+        : versions.Where(item => item.ActionId == null && item.AssessmentId == dto.AssessmentId);
+    var maxVersion = await versions.MaxAsync(item => (int?)item.Version, ct) ?? 0;
+    var version = checked(maxVersion + 1);
+    var item = new EvidenceItem
+    {
+        Id = Guid.NewGuid(), ActionId = dto.ActionId, AssessmentId = dto.AssessmentId,
+        FileName = dto.FileName, ContentType = dto.ContentType,
+        SizeBytes = dto.SizeBytes, Version = version, UploadedById = userId, UploadedAt = DateTime.UtcNow
+    };
+    db.Evidence.Add(item);
+    auditContext.SetReason($"Evidence uploaded: {item.FileName} (v{version})");
+    await db.SaveChangesAsync(ct);
+    
+    if (transaction is not null)
+        await transaction.CommitAsync(ct);
+        
+    logger.LogInformation("Created evidence {EvidenceId} for action {ActionId} and assessment {AssessmentId}",
+        item.Id, dto.ActionId, dto.AssessmentId);
+    return await GetByIdAsync(item.Id, ct)
+        ?? throw new InvalidOperationException("The saved evidence could not be retrieved.");
+}
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var userId = await ResolveUserIdAsync(ct);
