@@ -58,7 +58,7 @@ export function UploadEvidenceModal({ assessmentId, open, onClose }: Props) {
             )}
 
             <Field label="File (max 20 MB)" required>
-              <Input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              <Input type={'file' as any} onChange={(e) => setFile(e.target.files?.[0] || null)} />
             </Field>
 
             <Field label="Notes (Optional)">

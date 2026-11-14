@@ -1,5 +1,5 @@
 import {
-  Badge, Button, DataGrid, DataGridBody, DataGridCell, DataGridHeader, DataGridHeaderCell,
+  Button, DataGrid, DataGridBody, DataGridCell, DataGridHeader, DataGridHeaderCell,
   DataGridRow, Input, Spinner, TableCellLayout, Text, createTableColumn, makeStyles
 } from '@fluentui/react-components'
 import type { TableColumnDefinition } from '@fluentui/react-components'

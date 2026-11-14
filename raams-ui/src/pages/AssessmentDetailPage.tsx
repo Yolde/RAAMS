@@ -173,7 +173,7 @@ export function AssessmentDetailPage() {
 
       <AddActionModal
         assessmentId={id!}
-        findingId={actionFindingId}
+        findingId={actionFindingId ?? undefined} /* <-- Changed this line */
         open={actionFindingId !== null}
         onClose={() => setActionFindingId(null)}
       />
