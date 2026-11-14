@@ -60,6 +60,73 @@ public class FieldPermissionService(
         return result;
     }
 
+    public async Task<IReadOnlyList<FieldPermissionDto>> ListAllAsync(CancellationToken ct = default)
+    {
+        return await dbContext.FieldPermissions
+            .AsNoTracking()
+            .Include(p => p.Role)
+            .OrderBy(p => p.EntityType)
+            .ThenBy(p => p.FieldName)
+            .ThenBy(p => p.Role.Name)
+            .Select(p => new FieldPermissionDto
+            {
+                Id = p.Id,
+                RoleId = p.RoleId,
+                RoleName = p.Role.Name,
+                EntityType = p.EntityType,
+                FieldName = p.FieldName,
+                CanView = p.CanView,
+                CanEdit = p.CanEdit,
+            })
+            .ToListAsync(ct);
+    }
+
+    public async Task<FieldPermissionDto> UpsertAsync(UpsertFieldPermissionDto dto, CancellationToken ct = default)
+    {
+        var existing = await dbContext.FieldPermissions
+            .Include(p => p.Role)
+            .FirstOrDefaultAsync(p => p.RoleId == dto.RoleId
+                                   && p.EntityType == dto.EntityType
+                                   && p.FieldName == dto.FieldName, ct);
+
+        if (existing is null)
+        {
+            existing = new Domain.Entities.Roles.FieldPermission
+            {
+                Id = Guid.NewGuid(),
+                RoleId = dto.RoleId,
+                EntityType = dto.EntityType,
+                FieldName = dto.FieldName,
+                CanView = dto.CanView,
+                CanEdit = dto.CanEdit,
+            };
+            dbContext.FieldPermissions.Add(existing);
+            await dbContext.Entry(existing).Reference(p => p.Role).LoadAsync(ct);
+        }
+        else
+        {
+            existing.CanView = dto.CanView;
+            existing.CanEdit = dto.CanEdit;
+        }
+
+        await dbContext.SaveChangesAsync(ct);
+
+        // Invalidate the cache — critical! Otherwise the old permission sticks for 5 minutes.
+        if (cache is MemoryCache mc)
+            mc.Clear();
+
+        return new FieldPermissionDto
+        {
+            Id = existing.Id,
+            RoleId = existing.RoleId,
+            RoleName = existing.Role.Name,
+            EntityType = existing.EntityType,
+            FieldName = existing.FieldName,
+            CanView = existing.CanView,
+            CanEdit = existing.CanEdit,
+        };
+    }
+
     private void LogResult(string entityType, string fieldName, FieldPermissionResult result)
     {
         logger.LogDebug(

@@ -27,6 +27,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { logout } = useAuth()
   const { me, roles, hasRole, hasPermission, isLoading, error, retry } = usePermissions()
   const admin = hasRole('GRA') || hasRole('SuperAdmin')
+  
   if (isLoading) return <div className={styles.status}><Spinner label="Loading your permissions..." /></div>
   if (error || !me) {
     return (
@@ -39,13 +40,16 @@ export function Layout({ children }: { children: ReactNode }) {
       </div>
     )
   }
+  
   const links = [
     { to: '/dashboard', label: 'Dashboard', visible: true },
     { to: '/assessments', label: 'Assessments', visible: admin || hasPermission('Assessment.View') },
     { to: '/actions', label: 'Actions', visible: admin || hasPermission('Action.View') },
     { to: '/reviews', label: 'Reviews', visible: admin || hasPermission('Review.Create') },
     { to: '/evidence', label: 'Evidence', visible: admin || hasPermission('Evidence.View') },
+    { to: '/admin/permissions', label: 'Admin Permissions', visible: admin }, // <-- ADDED HERE
   ]
+  
   return (
     <div className={styles.shell}>
       <header className={styles.header}>

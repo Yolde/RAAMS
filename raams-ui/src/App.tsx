@@ -1,3 +1,4 @@
+import { AdminPermissionsPage } from './pages/AdminPermissionsPage'
 import { EvidencePage } from './pages/EvidencePage'
 import { FluentProvider, webLightTheme } from '@fluentui/react-components'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -45,7 +46,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-                
+                <Route path="/admin/permissions" element={<ProtectedRoute><AdminPermissionsPage /></ProtectedRoute>} />
                 {/* Assessment Routes */}
                 <Route path="/assessments" element={<ProtectedRoute><AssessmentsPage /></ProtectedRoute>} />
                 <Route path="/assessments/:id" element={<ProtectedRoute><AssessmentDetailPage /></ProtectedRoute>} /> {/* <-- NEW ROUTE */}

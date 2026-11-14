@@ -67,6 +67,8 @@ else
         .AddJwtBearer(options =>
         {
             options.RequireHttpsMetadata = false;
+            options.MapInboundClaims = false;
+            
             options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
             {
                 ValidateIssuer = true,

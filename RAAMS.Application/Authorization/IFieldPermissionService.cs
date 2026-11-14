@@ -1,5 +1,7 @@
 namespace RAAMS.Application.Authorization;
 
+public record FieldPermissionResult(bool CanView, bool CanEdit);
+
 public interface IFieldPermissionService
 {
     Task<FieldPermissionResult> GetAsync(
@@ -7,6 +9,7 @@ public interface IFieldPermissionService
         string fieldName,
         IEnumerable<string> userRoles,
         CancellationToken ct = default);
-}
 
-public record FieldPermissionResult(bool CanView, bool CanEdit);
+    Task<IReadOnlyList<FieldPermissionDto>> ListAllAsync(CancellationToken ct = default);
+    Task<FieldPermissionDto> UpsertAsync(UpsertFieldPermissionDto dto, CancellationToken ct = default);
+}
